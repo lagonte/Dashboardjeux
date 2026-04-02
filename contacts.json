@@ -1,0 +1,37 @@
+{
+  "ST1": {
+    "name": "TEST ST1",
+    "phone": "+33611111111",
+    "email": "st1@gmail.com",
+    "saved_at": "2026-04-02T07:42:28.600Z",
+    "used": false
+  },
+  "ST2": {
+    "name": "ST2",
+    "phone": "+33622222222",
+    "email": "st2@gmail.com",
+    "saved_at": "2026-04-02T07:44:43.062Z",
+    "used": false
+  },
+  "ST3": {
+    "name": "qs",
+    "phone": "+33625252525",
+    "email": "f@d.c",
+    "saved_at": "2026-04-02T07:30:56.916Z",
+    "used": false
+  },
+  "ST4": {
+    "name": "da",
+    "phone": "+33625252525",
+    "email": "h@d.c",
+    "saved_at": "2026-04-02T07:31:58.666Z",
+    "used": false
+  },
+  "ST4B": {
+    "name": "test",
+    "phone": "+33600000000",
+    "email": "test@test.com",
+    "saved_at": "2026-04-01T22:00:12.999Z",
+    "used": false
+  }
+}

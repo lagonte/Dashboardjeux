@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pilotage studios</title>
+  <style>
+    :root{
+      --bg:#06122b;
+      --panel:#0d1734;
+      --panel2:#111b3e;
+      --line:rgba(255,255,255,.08);
+      --blue:#2f6df6;
+      --green:#22c55e;
+      --red:#ef4444;
+      --text:#f5f7ff;
+      --muted:rgba(255,255,255,.55);
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color:var(--text);
+      background:radial-gradient(circle at top, #0b204d 0%, #05122d 45%, #020916 100%);
+      min-height:100vh;
+    }
+
+    .wrap{
+      padding:16px 20px 28px;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:20px;
+      font-size:26px;
+      font-weight:800;
+    }
+
+    .clock{
+      font-size:28px;
+      color:#fff;
+      font-weight:900;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0,1fr));
+      gap:18px;
+    }
+
+    .studio-btn{
+      position:relative;
+      min-height:160px;
+      border-radius:26px;
+      border:2px solid rgba(255,255,255,.09);
+      background:rgba(255,255,255,.03);
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+      padding:18px;
+      cursor:pointer;
+      transition:.15s ease;
+      user-select:none;
+    }
+
+    .studio-btn:hover{ transform:translateY(-1px); }
+
+    .studio-btn.free{
+      border-color:rgba(47,109,246,.95);
+      background:rgba(47,109,246,.10);
+    }
+
+    .studio-btn.busy{
+      border-color:rgba(255,255,255,.08);
+      background:rgba(255,255,255,.05);
+      cursor:not-allowed;
+      opacity:.72;
+    }
+
+    .studio-dot{
+      position:absolute;
+      top:14px;
+      right:14px;
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.1);
+    }
+
+    .studio-btn.free .studio-dot{ background:var(--blue); }
+    .studio-btn.busy .studio-dot{ background:#2a2a2a; }
+
+    .studio-number{
+      font-size:58px;
+      line-height:1;
+      font-weight:900;
+      color:var(--blue);
+      margin-bottom:8px;
+    }
+
+    .studio-title{
+      font-size:17px;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .studio-status{
+      margin-top:12px;
+      font-size:15px;
+      font-weight:800;
+      color:var(--green);
+      min-height:22px;
+    }
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(1,6,15,.75);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      z-index:999;
+    }
+
+    .overlay.open{ display:flex; }
+
+    .modal{
+      width:min(520px, 100%);
+      background:linear-gradient(180deg, #101b3d, #0b1532);
+      border:1px solid var(--line);
+      border-radius:24px;
+      box-shadow:0 20px 50px rgba(0,0,0,.35);
+      padding:22px;
+    }
+
+    .modal h2{
+      margin:0 0 8px;
+      font-size:28px;
+    }
+
+    .modal p{
+      margin:0 0 16px;
+      color:var(--muted);
+    }
+
+    .field{
+      margin-bottom:14px;
+    }
+
+    .field label{
+      display:block;
+      margin-bottom:7px;
+      font-weight:700;
+      font-size:14px;
+    }
+
+    .field input,
+    .field select{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:15px 14px;
+      font-size:18px;
+      color:#fff;
+      background:#081126;
+      outline:none;
+    }
+
+    .field input:focus,
+    .field select:focus{
+      border-color:rgba(47,109,246,.85);
+      box-shadow:0 0 0 4px rgba(47,109,246,.16);
+    }
+
+    .error{
+      min-height:18px;
+      margin-top:6px;
+      color:#ff9f9f;
+      font-size:13px;
+    }
+
+    .row{
+      display:flex;
+      gap:12px;
+      margin-top:8px;
+    }
+
+    button{
+      border:0;
+      border-radius:16px;
+      min-height:56px;
+      padding:14px 18px;
+      font-size:18px;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    .btn-secondary{
+      background:#243255;
+      color:#fff;
+      flex:1;
+    }
+
+    .btn-primary{
+      background:var(--blue);
+      color:#fff;
+      flex:1;
+    }
+
+    button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+
+    .license-screen{
+      min-height:100vh;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    .license-screen.open{ display:flex; }
+
+    .license-box{
+      width:min(520px,100%);
+      background:linear-gradient(180deg,#101b3d,#0b1532);
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding:24px;
+    }
+
+    .license-box h1{
+      margin:0 0 10px;
+      font-size:30px;
+    }
+
+    .license-box p{
+      color:var(--muted);
+      margin:0 0 16px;
+    }
+
+    .license-box input{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      font-size:18px;
+      color:#fff;
+      background:#081126;
+      margin-bottom:12px;
+    }
+
+    .hint{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:8px;
+      min-height:18px;
+    }
+
+    @media (max-width: 1100px){
+      .grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+    }
+
+    @media (max-width: 720px){
+      .grid{ grid-template-columns:1fr; }
+      .topbar{ font-size:22px; }
+      .clock{ font-size:24px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="licenseScreen" class="license-screen">
+    <div class="license-box">
+      <h1>Activation licence</h1>
+      <p>Entrez votre clé licence pour activer l’application locale.</p>
+      <input id="licenseKeyInput" type="text" placeholder="XXXX-XXXX-XXXX" />
+      <button id="activateBtn" class="btn-primary" style="width:100%">Activer</button>
+      <div id="licenseHint" class="hint"></div>
+    </div>
+  </div>
+
+  <div id="appRoot" style="display:none">
+    <div class="wrap">
+      <div class="topbar">
+        <div>Pilotage studios</div>
+        <div id="clock" class="clock">--:--:--</div>
+      </div>
+
+      <div id="grid" class="grid"></div>
+    </div>
+  </div>
+
+  <div id="overlay" class="overlay">
+    <div class="modal">
+      <h2 id="modalTitle">Lancer studio</h2>
+      <p id="modalSubtitle"></p>
+
+      <div class="field">
+        <label>Prénom / Nom</label>
+        <input id="nameInput" type="text" placeholder="Camille" />
+        <div id="nameError" class="error"></div>
+      </div>
+
+      <div class="field">
+        <label>WhatsApp</label>
+        <input id="phoneInput" type="tel" placeholder="0624252627 ou +33624252627" />
+      </div>
+
+      <div class="field">
+        <label>Pays</label>
+        <select id="countrySelect">
+          <option value="+33" selected>France (+33)</option>
+          <option value="+32">Belgique (+32)</option>
+          <option value="+41">Suisse (+41)</option>
+          <option value="+44">Royaume-Uni (+44)</option>
+          <option value="+34">Espagne (+34)</option>
+          <option value="+39">Italie (+39)</option>
+          <option value="+49">Allemagne (+49)</option>
+          <option value="+1">États-Unis / Canada (+1)</option>
+        </select>
+        <div id="phoneError" class="error"></div>
+      </div>
+
+      <div class="field">
+        <label>Email</label>
+        <input id="emailInput" type="email" placeholder="contact@email.com" />
+        <div id="emailError" class="error"></div>
+      </div>
+
+      <div class="row">
+        <button id="cancelBtn" class="btn-secondary">Annuler</button>
+        <button id="launchBtn" class="btn-primary" disabled>Lancer</button>
+      </div>
+
+      <div id="modalHint" class="hint"></div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      studios: [],
+      selectedStudio: null,
+      submitting: false
+    };
+
+    const els = {
+      appRoot: document.getElementById("appRoot"),
+      licenseScreen: document.getElementById("licenseScreen"),
+      licenseKeyInput: document.getElementById("licenseKeyInput"),
+      activateBtn: document.getElementById("activateBtn"),
+      licenseHint: document.getElementById("licenseHint"),
+      clock: document.getElementById("clock"),
+      grid: document.getElementById("grid"),
+      overlay: document.getElementById("overlay"),
+      modalTitle: document.getElementById("modalTitle"),
+      modalSubtitle: document.getElementById("modalSubtitle"),
+      nameInput: document.getElementById("nameInput"),
+      phoneInput: document.getElementById("phoneInput"),
+      countrySelect: document.getElementById("countrySelect"),
+      emailInput: document.getElementById("emailInput"),
+      nameError: document.getElementById("nameError"),
+      phoneError: document.getElementById("phoneError"),
+      emailError: document.getElementById("emailError"),
+      launchBtn: document.getElementById("launchBtn"),
+      cancelBtn: document.getElementById("cancelBtn"),
+      modalHint: document.getElementById("modalHint")
+    };
+
+    function normalizePhone(phone) {
+      let p = String(phone || "").replace(/[^\d+]/g, "").trim();
+      const countryCode = els.countrySelect?.value || "+33";
+
+      if (!p) return "";
+      if (p.startsWith("+")) return p;
+      if (p.startsWith("00")) return "+" + p.slice(2);
+      if (p.startsWith("0")) return countryCode + p.slice(1);
+      return countryCode + p;
+    }
+
+    function validName(name) {
+      return String(name || "").trim().length >= 2;
+    }
+
+    function validPhone(phone) {
+      const normalized = normalizePhone(phone);
+      return /^\+\d{8,15}$/.test(normalized);
+    }
+
+    function validEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+    }
+
+    async function api(url, options = {}) {
+      try {
+        const res = await fetch(url, {
+          headers: { "Content-Type": "application/json" },
+          ...options
+        });
+
+        const text = await res.text();
+        let data = {};
+
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          data = { raw: text };
+        }
+
+        if (!res.ok) {
+          throw new Error(data.error || data.raw || `HTTP ${res.status}`);
+        }
+
+        return data;
+      } catch (error) {
+        console.error("API failed:", url, error);
+        throw new Error(error.message || "Fetch failed");
+      }
+    }
+
+    function updateClock() {
+      els.clock.textContent = new Date().toLocaleTimeString("fr-FR");
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function renderStudios() {
+      els.grid.innerHTML = state.studios.map((studio) => {
+        const busy = studio.status === "busy";
+        return `
+          <div class="studio-btn ${busy ? "busy" : "free"}" data-id="${studio.id}">
+            <div class="studio-dot"></div>
+            <div class="studio-number">${studio.label}</div>
+            <div class="studio-title">${escapeHtml(studio.gameName)}</div>
+            <div class="studio-status">${busy ? "Indisponible" : "Disponible"}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function loadStudios() {
+      const data = await api("/api/studios");
+      state.studios = Array.isArray(data.studios) ? data.studios : [];
+      renderStudios();
+    }
+
+    async function checkLicense() {
+      try {
+        const status = await api("/api/license/status");
+
+        if (status.valid) {
+          els.licenseScreen.classList.remove("open");
+          els.appRoot.style.display = "block";
+          els.licenseHint.textContent = "";
+          await loadStudios();
+          return;
+        }
+
+        els.appRoot.style.display = "none";
+        els.licenseScreen.classList.add("open");
+        els.licenseHint.textContent = "Licence invalide ou non activée.";
+      } catch (error) {
+        els.appRoot.style.display = "none";
+        els.licenseScreen.classList.add("open");
+        els.licenseHint.textContent = error.message || "Fetch failed";
+      }
+    }
+
+    async function activateLicense() {
+      const licenseKey = els.licenseKeyInput.value.trim();
+
+      if (!licenseKey) {
+        els.licenseHint.textContent = "Entrez une clé licence.";
+        return;
+      }
+
+      els.licenseHint.textContent = "Activation...";
+
+      try {
+        await api("/api/license/activate", {
+          method: "POST",
+          body: JSON.stringify({ licenseKey })
+        });
+
+        els.licenseScreen.classList.remove("open");
+        els.appRoot.style.display = "block";
+        els.licenseHint.textContent = "";
+
+        await loadStudios();
+      } catch (error) {
+        els.licenseHint.textContent = error.message || "Activation impossible";
+      }
+    }
+
+    function openModal(studio) {
+      state.selectedStudio = studio;
+      state.submitting = false;
+      els.modalTitle.textContent = `Lancer studio ${studio.label}`;
+      els.modalSubtitle.textContent = studio.gameName;
+      els.nameInput.value = "";
+      els.phoneInput.value = "";
+      els.countrySelect.value = "+33";
+      els.emailInput.value = "";
+      els.modalHint.textContent = "";
+      validateForm();
+      els.overlay.classList.add("open");
+      els.nameInput.focus();
+    }
+
+    function closeModal() {
+      if (state.submitting) return;
+      els.overlay.classList.remove("open");
+      state.selectedStudio = null;
+    }
+
+    function validateForm() {
+      const name = els.nameInput.value;
+      const phone = els.phoneInput.value;
+      const email = els.emailInput.value;
+
+      const nameOk = validName(name);
+      const phoneOk = validPhone(phone);
+      const emailOk = validEmail(email);
+
+      els.nameError.textContent = nameOk || !name ? "" : "Nom requis";
+      els.phoneError.textContent = phoneOk || !phone ? "" : "Numéro invalide";
+      els.emailError.textContent = emailOk || !email ? "" : "Email invalide";
+
+      els.launchBtn.disabled = !(nameOk && phoneOk && emailOk) || state.submitting;
+    }
+
+    async function launchSelectedStudio() {
+      if (!state.selectedStudio || state.submitting) return;
+
+      state.submitting = true;
+      validateForm();
+      els.modalHint.textContent = "Lancement en cours...";
+
+      try {
+        await api(`/api/studios/${state.selectedStudio.id}/launch`, {
+          method: "POST",
+          body: JSON.stringify({
+            name: els.nameInput.value.trim(),
+            phone: els.phoneInput.value.trim(),
+            countryCode: els.countrySelect.value,
+            email: els.emailInput.value.trim()
+          })
+        });
+
+        els.modalHint.textContent = "Studio lancé.";
+        await loadStudios();
+        setTimeout(() => closeModal(), 350);
+      } catch (error) {
+        state.submitting = false;
+        validateForm();
+        els.modalHint.textContent = error.message || "Lancement impossible";
+      }
+    }
+
+    els.grid.addEventListener("click", (e) => {
+      const tile = e.target.closest("[data-id]");
+      if (!tile) return;
+
+      const studio = state.studios.find((s) => s.id === tile.dataset.id);
+      if (!studio || studio.status === "busy") return;
+
+      openModal(studio);
+    });
+
+    els.cancelBtn.addEventListener("click", closeModal);
+    els.overlay.addEventListener("click", (e) => {
+      if (e.target === els.overlay) closeModal();
+    });
+
+    [els.nameInput, els.phoneInput, els.emailInput, els.countrySelect].forEach((el) => {
+      el.addEventListener("input", validateForm);
+      el.addEventListener("change", validateForm);
+    });
+
+    els.phoneInput.addEventListener("blur", () => {
+      if (els.phoneInput.value.trim()) {
+        els.phoneInput.value = normalizePhone(els.phoneInput.value);
+        validateForm();
+      }
+    });
+
+    els.launchBtn.addEventListener("click", launchSelectedStudio);
+    els.activateBtn.addEventListener("click", activateLicense);
+
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    checkLicense();
+    setInterval(() => {
+      if (els.appRoot.style.display !== "none") {
+        loadStudios().catch(() => {});
+      }
+    }, 3000);
+  </script>
+</body>
+</html>

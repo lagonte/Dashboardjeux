@@ -1,0 +1,76 @@
+{
+    "server": {
+      "port": 3000
+    },
+    "license": {
+      "validationUrl": "https://vercel-license-three.vercel.app/api/validate-license",
+      "gracePeriodHours": 168
+    },
+    "companion": {
+      "baseUrl": "http://127.0.0.1:8000"
+    },
+    "contactsJsonPath": "./contacts.json",
+    "licenseStorePath": "./license-store.json",
+    "studios": [
+      {
+        "id": "ST1",
+        "label": "1",
+        "gameName": "Le dernier qui rit gagne",
+        "launchButton": { "page": 1, "bank": 1 },
+        "contactVariables": {
+          "name": "contact_ST1_name",
+          "phone": "contact_ST1_phone",
+          "email": "contact_ST1_email"
+        },
+        "busyVariable": "studio_ST1_busy"
+      },
+      {
+        "id": "ST2",
+        "label": "2",
+        "gameName": "Patisserie Arrosée",
+        "launchButton": { "page": 1, "bank": 2 },
+        "contactVariables": {
+          "name": "contact_ST2_name",
+          "phone": "contact_ST2_phone",
+          "email": "contact_ST2_email"
+        },
+        "busyVariable": "studio_ST2_busy"
+      },
+      {
+        "id": "ST3",
+        "label": "3",
+        "gameName": "Meilleur bluffeur",
+        "launchButton": { "page": 1, "bank": 3 },
+        "contactVariables": {
+          "name": "contact_ST3_name",
+          "phone": "contact_ST3_phone",
+          "email": "contact_ST3_email"
+        },
+        "busyVariable": "studio_ST3_busy"
+      },
+      {
+        "id": "ST4",
+        "label": "4",
+        "gameName": "Alibi 1",
+        "launchButton": { "page": 1, "bank": 4 },
+        "contactVariables": {
+          "name": "contact_ST4_name",
+          "phone": "contact_ST4_phone",
+          "email": "contact_ST4_email"
+        },
+        "busyVariable": "studio_ST4_busy"
+      },
+      {
+        "id": "ST4B",
+        "label": "4b",
+        "gameName": "Alibi 2",
+        "launchButton": { "page": 1, "bank": 5 },
+        "contactVariables": {
+          "name": "contact_ST4B_name",
+          "phone": "contact_ST4B_phone",
+          "email": "contact_ST4B_email"
+        },
+        "busyVariable": "studio_ST4B_busy"
+      }
+    ]
+  }

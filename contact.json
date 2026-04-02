@@ -1,0 +1,7 @@
+{
+    "ST1":  { "name": "", "phone": "", "email": "", "saved_at": "", "used": true },
+    "ST2":  { "name": "", "phone": "", "email": "", "saved_at": "", "used": true },
+    "ST3":  { "name": "", "phone": "", "email": "", "saved_at": "", "used": true },
+    "ST4":  { "name": "", "phone": "", "email": "", "saved_at": "", "used": true },
+    "ST4B": { "name": "", "phone": "", "email": "", "saved_at": "", "used": true }
+  }
