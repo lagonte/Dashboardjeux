@@ -145,12 +145,31 @@ async function companionSetCustomVariable(name, value) {
     );
 }
 
-async function companionPressButton(page, row, column) {
-    await axios.post(
-      `${CONFIG.companionUrl}/api/location/${page}/${row}/${column}/press`,
-      null,
-      { timeout: 3000 }
-    );
+async function pressGameButtons(game) {
+  // launchButton peut être un objet (legacy) ou un tableau (multi-companion)
+  const buttons = Array.isArray(game.launchButton)
+    ? game.launchButton
+    : [{ ...game.launchButton, companionUrl: CONFIG.companionUrl }];
+
+  const results = await Promise.allSettled(
+    buttons.map(btn => {
+      const url = btn.companionUrl || CONFIG.companionUrl;
+      return axios.post(
+        `${url}/api/location/${btn.page}/${btn.row}/${btn.column}/press`,
+        null,
+        { timeout: 3000 }
+      );
+    })
+  );
+
+  results.forEach((r, i) => {
+    if (r.status === "rejected")
+      console.warn(`Companion bouton ${i} échoué:`, r.reason?.message);
+  });
+
+  if (results.every(r => r.status === "rejected")) {
+    throw new Error("Tous les Companions ont échoué");
+  }
 }
 
 async function getStudioRuntimeState(studio, contact) {
@@ -436,11 +455,7 @@ app.post("/api/studios/:id/launch", requireLicense, async (req, res) => {
       await companionSetCustomVariable(studio.contactVariables.name, name);
       await companionSetCustomVariable(studio.contactVariables.phone, phone);
       await companionSetCustomVariable(studio.contactVariables.email, email);
-      await companionPressButton(
-        game.launchButton.page,
-        game.launchButton.row,
-        game.launchButton.column
-      );
+      await pressGameButtons(game);
 
       // Companion OK → persistance des données
       const contact = {

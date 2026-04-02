@@ -505,6 +505,41 @@
     .game-choice-btn:hover{ background:rgba(47,109,246,.25); border-color:rgba(47,109,246,.55); }
 
     /* ---- Éditeur de jeux (modal config) ---- */
+    .ge-buttons{ margin-top:6px; padding-left:10px; border-left:2px solid rgba(255,255,255,.08); }
+    .ge-btn-entry{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      margin-bottom:6px;
+    }
+    .ge-url{
+      flex:1;
+      border:1px solid var(--line);
+      border-radius:8px;
+      padding:8px 10px;
+      font-size:12px;
+      color:#fff;
+      background:#081126;
+      outline:none;
+      font-family:monospace;
+      min-width:0;
+    }
+    .ge-url:focus{ border-color:rgba(47,109,246,.85); }
+    .ge-add-btn-companion{
+      background:rgba(255,255,255,.06);
+      color:var(--muted);
+      border:1px dashed rgba(255,255,255,.15);
+      border-radius:8px;
+      padding:6px 12px;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+      min-height:unset;
+      margin-top:4px;
+      transition:.15s;
+      width:100%;
+    }
+    .ge-add-btn-companion:hover{ color:#fff; border-color:rgba(255,255,255,.3); }
     .game-entry{
       display:flex;
       gap:8px;
@@ -1016,9 +1051,11 @@
       list.innerHTML = cfgState.studios.map((s, i) => {
         const games = s.games || [];
         const titleName = games.length === 1 ? escapeHtml(games[0].name) : `${games.length} jeu(x)`;
-        const gamesChips = games.map(g =>
-          `<span class="meta-chip">${escapeHtml(g.name)} · P${g.launchButton?.page}·R${g.launchButton?.row}·C${g.launchButton?.column}</span>`
-        ).join("");
+        const gamesChips = games.map(g => {
+          const btns = Array.isArray(g.launchButton) ? g.launchButton : [g.launchButton];
+          const btnText = btns.map(b => `P${b?.page}·R${b?.row}·C${b?.column}${b?.companionUrl ? ' (' + b.companionUrl.replace('http://','') + ')' : ''}`).join(' + ');
+          return `<span class="meta-chip">${escapeHtml(g.name)} · ${btnText}</span>`;
+        }).join("");
         return `
         <div class="studio-config-card">
           <div class="studio-config-order">
@@ -1091,33 +1128,46 @@
     }
 
     /* ---- Modal config ---- */
+    function renderBtnEntry(gameIdx, btnIdx, btn) {
+      return `<div class="ge-btn-entry" data-game-idx="${gameIdx}" data-btn-idx="${btnIdx}">
+        <input class="ge-url" type="text" placeholder="URL Companion (vide = global)" value="${escapeHtml(btn.companionUrl || '')}" />
+        <div class="ge-btn-group">
+          <div class="ge-num-field"><label>P</label><input class="ge-page" type="number" min="0" value="${btn.page}" /></div>
+          <div class="ge-num-field"><label>R</label><input class="ge-rownum" type="number" min="0" value="${btn.row}" /></div>
+          <div class="ge-num-field"><label>C</label><input class="ge-col" type="number" min="0" value="${btn.column}" /></div>
+        </div>
+        <button class="btn-icon danger" data-del-btn data-game-idx="${gameIdx}" data-btn-idx="${btnIdx}" title="Supprimer ce bouton">🗑️</button>
+      </div>`;
+    }
+
     function renderCfgGames() {
       const list = document.getElementById("cfgGamesList");
       if (!cfgState.editingGames.length) {
         list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:6px 0">Aucun jeu. Cliquez sur <em>+ Ajouter un jeu</em>.</div>';
         return;
       }
-      list.innerHTML = cfgState.editingGames.map((g, i) => `
-        <div class="game-entry" data-idx="${i}">
-          <input class="ge-name" type="text" placeholder="Nom du jeu" value="${escapeHtml(g.name)}" />
-          <div class="ge-btn-group">
-            <div class="ge-num-field"><label>P</label><input class="ge-page" type="number" min="0" value="${g.launchButton.page}" /></div>
-            <div class="ge-num-field"><label>R</label><input class="ge-rownum" type="number" min="0" value="${g.launchButton.row}" /></div>
-            <div class="ge-num-field"><label>C</label><input class="ge-col" type="number" min="0" value="${g.launchButton.column}" /></div>
+      list.innerHTML = cfgState.editingGames.map((g, i) => {
+        const btns = (Array.isArray(g.launchButton) ? g.launchButton : [g.launchButton]).map((b, j) => renderBtnEntry(i, j, b)).join("");
+        return `<div class="game-entry" data-idx="${i}">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <input class="ge-name" type="text" placeholder="Nom du jeu" value="${escapeHtml(g.name)}" style="flex:1" />
+            <button class="btn-icon danger" data-del-game="${i}" title="Supprimer ce jeu">🗑️</button>
           </div>
-          <button class="btn-icon danger ge-delete" data-del-idx="${i}" title="Supprimer">🗑️</button>
-        </div>
-      `).join("");
+          <div class="ge-buttons">${btns}</div>
+          <button class="ge-add-btn-companion" data-add-btn="${i}">+ Ajouter un Companion</button>
+        </div>`;
+      }).join("");
     }
 
     function syncGamesFromDOM() {
-      cfgState.editingGames = Array.from(document.querySelectorAll("#cfgGamesList .game-entry")).map(row => ({
-        name: row.querySelector(".ge-name").value.trim(),
-        launchButton: {
-          page:   parseInt(row.querySelector(".ge-page").value)   || 0,
-          row:    parseInt(row.querySelector(".ge-rownum").value) || 0,
-          column: parseInt(row.querySelector(".ge-col").value)    || 0
-        }
+      cfgState.editingGames = Array.from(document.querySelectorAll("#cfgGamesList .game-entry")).map(gameRow => ({
+        name: gameRow.querySelector(".ge-name").value.trim(),
+        launchButton: Array.from(gameRow.querySelectorAll(".ge-btn-entry")).map(btnRow => ({
+          companionUrl: btnRow.querySelector(".ge-url").value.trim(),
+          page:         parseInt(btnRow.querySelector(".ge-page").value)   || 0,
+          row:          parseInt(btnRow.querySelector(".ge-rownum").value) || 0,
+          column:       parseInt(btnRow.querySelector(".ge-col").value)    || 0
+        }))
       }));
     }
 
@@ -1141,7 +1191,12 @@
         document.getElementById("cfgContactName").value  = s.contactVariables?.name  || "";
         document.getElementById("cfgContactPhone").value = s.contactVariables?.phone || "";
         document.getElementById("cfgContactEmail").value = s.contactVariables?.email || "";
-        cfgState.editingGames = (s.games || []).map(g => ({ name: g.name, launchButton: { ...g.launchButton } }));
+        cfgState.editingGames = (s.games || []).map(g => ({
+          name: g.name,
+          launchButton: Array.isArray(g.launchButton)
+            ? g.launchButton.map(b => ({ ...b }))
+            : [{ companionUrl: '', ...(g.launchButton || { page: 2, row: 0, column: 0 }) }]
+        }));
       } else {
         document.getElementById("configModalTitle").textContent = "Nouveau studio";
         document.getElementById("cfgId").disabled  = false;
@@ -1151,7 +1206,7 @@
         document.getElementById("cfgContactName").value  = "";
         document.getElementById("cfgContactPhone").value = "";
         document.getElementById("cfgContactEmail").value = "";
-        cfgState.editingGames = [{ name: "", launchButton: { page: 2, row: 0, column: 0 } }];
+        cfgState.editingGames = [{ name: "", launchButton: [{ companionUrl: "", page: 2, row: 0, column: 0 }] }];
       }
 
       renderCfgGames();
@@ -1232,16 +1287,38 @@
 
     // Gestion des jeux dans la modal config
     document.getElementById("cfgGamesList").addEventListener("click", e => {
-      const delBtn = e.target.closest("[data-del-idx]");
-      if (!delBtn) return;
-      syncGamesFromDOM();
-      cfgState.editingGames.splice(parseInt(delBtn.dataset.delIdx), 1);
-      renderCfgGames();
+      const delGame = e.target.closest("[data-del-game]");
+      const delBtn  = e.target.closest("[data-del-btn]");
+      const addBtn  = e.target.closest("[data-add-btn]");
+
+      if (delGame) {
+        syncGamesFromDOM();
+        cfgState.editingGames.splice(parseInt(delGame.dataset.delGame), 1);
+        renderCfgGames();
+      } else if (delBtn) {
+        syncGamesFromDOM();
+        const gi = parseInt(delBtn.dataset.gameIdx);
+        const bi = parseInt(delBtn.dataset.btnIdx);
+        const btns = cfgState.editingGames[gi].launchButton;
+        if (btns.length > 1) {
+          btns.splice(bi, 1);
+          renderCfgGames();
+        }
+      } else if (addBtn) {
+        syncGamesFromDOM();
+        const gi = parseInt(addBtn.dataset.addBtn);
+        cfgState.editingGames[gi].launchButton.push({ companionUrl: "", page: 2, row: 0, column: 0 });
+        renderCfgGames();
+        // Focus le nouveau champ URL
+        const gameRows = document.querySelectorAll("#cfgGamesList .game-entry");
+        const newBtnEntry = gameRows[gi]?.querySelectorAll(".ge-btn-entry");
+        if (newBtnEntry?.length) newBtnEntry[newBtnEntry.length - 1].querySelector(".ge-url").focus();
+      }
     });
 
     document.getElementById("cfgAddGameBtn").addEventListener("click", () => {
       syncGamesFromDOM();
-      cfgState.editingGames.push({ name: "", launchButton: { page: 2, row: 0, column: 0 } });
+      cfgState.editingGames.push({ name: "", launchButton: [{ companionUrl: "", page: 2, row: 0, column: 0 }] });
       renderCfgGames();
       const entries = document.querySelectorAll("#cfgGamesList .game-entry");
       if (entries.length) entries[entries.length - 1].querySelector(".ge-name").focus();
