@@ -484,6 +484,63 @@
 
     .hint{ color:var(--muted); font-size:13px; margin-top:8px; min-height:18px; }
 
+
+    /* ---- Sélecteur de jeu (modal lancement) ---- */
+    .game-choice-btn{
+      display:block;
+      width:100%;
+      background:rgba(47,109,246,.10);
+      border:1px solid rgba(47,109,246,.28);
+      border-radius:14px;
+      padding:16px 20px;
+      font-size:17px;
+      font-weight:700;
+      color:#fff;
+      text-align:left;
+      margin-bottom:10px;
+      min-height:unset;
+      cursor:pointer;
+      transition:.15s;
+    }
+    .game-choice-btn:hover{ background:rgba(47,109,246,.25); border-color:rgba(47,109,246,.55); }
+
+    /* ---- Éditeur de jeux (modal config) ---- */
+    .game-entry{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      background:rgba(255,255,255,.04);
+      border-radius:12px;
+      padding:10px;
+      margin-bottom:8px;
+    }
+    .ge-name{
+      flex:1;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px 12px;
+      font-size:14px;
+      color:#fff;
+      background:#081126;
+      outline:none;
+      min-width:0;
+    }
+    .ge-name:focus{ border-color:rgba(47,109,246,.85); }
+    .ge-btn-group{ display:flex; gap:4px; }
+    .ge-num-field{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .ge-num-field label{ font-size:10px; color:var(--muted); font-weight:700; }
+    .ge-num-field input{
+      width:48px;
+      border:1px solid var(--line);
+      border-radius:8px;
+      padding:8px 4px;
+      font-size:13px;
+      color:#fff;
+      background:#081126;
+      outline:none;
+      text-align:center;
+    }
+    .ge-num-field input:focus{ border-color:rgba(47,109,246,.85); }
     @media (max-width:1100px){ .grid{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
     @media (max-width:720px){
       .grid{ grid-template-columns:1fr; }
@@ -560,41 +617,49 @@
       <h2 id="modalTitle">Lancer studio</h2>
       <p id="modalSubtitle"></p>
 
-      <div class="field">
-        <label>Prénom / Nom</label>
-        <input id="nameInput" type="text" placeholder="Camille" />
-        <div id="nameError" class="error"></div>
+      <!-- Étape 1 : choix du jeu (multi-jeux) -->
+      <div id="gamePickerSection" style="display:none">
+        <div id="gamePickerList"></div>
       </div>
 
-      <div class="field">
-        <label>WhatsApp</label>
-        <input id="phoneInput" type="tel" placeholder="0624252627 ou +33624252627" />
-      </div>
+      <!-- Étape 2 : formulaire contact -->
+      <div id="contactFormSection">
+        <div class="field">
+          <label>Prénom / Nom</label>
+          <input id="nameInput" type="text" placeholder="Camille" />
+          <div id="nameError" class="error"></div>
+        </div>
 
-      <div class="field">
-        <label>Pays</label>
-        <select id="countrySelect">
-          <option value="+33" selected>France (+33)</option>
-          <option value="+32">Belgique (+32)</option>
-          <option value="+41">Suisse (+41)</option>
-          <option value="+44">Royaume-Uni (+44)</option>
-          <option value="+34">Espagne (+34)</option>
-          <option value="+39">Italie (+39)</option>
-          <option value="+49">Allemagne (+49)</option>
-          <option value="+1">États-Unis / Canada (+1)</option>
-        </select>
-        <div id="phoneError" class="error"></div>
-      </div>
+        <div class="field">
+          <label>WhatsApp</label>
+          <input id="phoneInput" type="tel" placeholder="0624252627 ou +33624252627" />
+        </div>
 
-      <div class="field">
-        <label>Email</label>
-        <input id="emailInput" type="email" placeholder="contact@email.com" />
-        <div id="emailError" class="error"></div>
+        <div class="field">
+          <label>Pays</label>
+          <select id="countrySelect">
+            <option value="+33" selected>France (+33)</option>
+            <option value="+32">Belgique (+32)</option>
+            <option value="+41">Suisse (+41)</option>
+            <option value="+44">Royaume-Uni (+44)</option>
+            <option value="+34">Espagne (+34)</option>
+            <option value="+39">Italie (+39)</option>
+            <option value="+49">Allemagne (+49)</option>
+            <option value="+1">États-Unis / Canada (+1)</option>
+          </select>
+          <div id="phoneError" class="error"></div>
+        </div>
+
+        <div class="field">
+          <label>Email</label>
+          <input id="emailInput" type="email" placeholder="contact@email.com" />
+          <div id="emailError" class="error"></div>
+        </div>
       </div>
 
       <div class="row">
         <button id="cancelBtn" class="btn-secondary">Annuler</button>
-        <button id="launchBtn" class="btn-primary" disabled>Lancer</button>
+        <button id="launchBtn" class="btn-primary" disabled style="display:none">Lancer</button>
       </div>
 
       <div id="modalHint" class="hint"></div>
@@ -612,15 +677,9 @@
         <div id="cfgIdError" class="error"></div>
       </div>
 
-      <div class="field-row-2" style="margin-bottom:14px">
-        <div class="field-sub">
-          <label>Label affiché</label>
-          <input id="cfgLabel" type="text" placeholder="1" />
-        </div>
-        <div class="field-sub">
-          <label>Nom du jeu</label>
-          <input id="cfgGameName" type="text" placeholder="Le premier qui rit..." />
-        </div>
+      <div class="field">
+        <label>Label affiché</label>
+        <input id="cfgLabel" type="text" placeholder="1" />
       </div>
 
       <div class="field">
@@ -630,21 +689,10 @@
       </div>
 
       <div class="field">
-        <label>Bouton Companion à presser</label>
-        <div class="field-row">
-          <div class="field-sub">
-            <label>Page</label>
-            <input id="cfgPage" type="number" min="0" placeholder="2" />
-          </div>
-          <div class="field-sub">
-            <label>Rangée</label>
-            <input id="cfgRow" type="number" min="0" placeholder="0" />
-          </div>
-          <div class="field-sub">
-            <label>Colonne</label>
-            <input id="cfgColumn" type="number" min="0" placeholder="0" />
-          </div>
-        </div>
+        <label>Jeux</label>
+        <div id="cfgGamesList"></div>
+        <button type="button" id="cfgAddGameBtn" class="btn-secondary btn-sm" style="width:100%;margin-top:8px">+ Ajouter un jeu</button>
+        <div id="cfgGamesError" class="error"></div>
       </div>
 
       <button class="advanced-toggle" id="advancedToggle">▸ Variables contact Companion (avancé)</button>
@@ -679,12 +727,14 @@
     const state = {
       studios: [],
       selectedStudio: null,
+      selectedGameIndex: -1,
       submitting: false
     };
 
     const cfgState = {
       studios: [],
-      editingId: null   // null = nouveau, string = modification
+      editingId: null,
+      editingGames: []
     };
 
     /* ============================================================
@@ -815,11 +865,15 @@
         const unknown = studio.status === "unknown";
         const cls     = busy ? "busy" : unknown ? "unknown" : "free";
         const statusText = busy ? "Indisponible" : unknown ? "Companion hors ligne" : "Disponible";
+        const games = studio.games || [];
+        const gameTitle = games.length === 0 ? "" :
+          games.length === 1 ? escapeHtml(games[0].name) :
+          escapeHtml(games[0].name) + ` <span style="color:var(--muted);font-size:12px">(+${games.length - 1})</span>`;
         return `
           <div class="studio-btn ${cls}" data-id="${studio.id}">
             <div class="studio-dot"></div>
             <div class="studio-number">${escapeHtml(studio.label)}</div>
-            <div class="studio-title">${escapeHtml(studio.gameName)}</div>
+            <div class="studio-title">${gameTitle}</div>
             <div class="studio-status">${statusText}</div>
           </div>`;
       }).join("");
@@ -834,17 +888,37 @@
     /* ---- Modal lancement ---- */
     function openModal(studio) {
       state.selectedStudio = studio;
+      state.selectedGameIndex = -1;
       state.submitting = false;
-      els.modalTitle.textContent    = `Lancer studio ${studio.label}`;
-      els.modalSubtitle.textContent = studio.gameName;
-      els.nameInput.value   = "";
-      els.phoneInput.value  = "";
+      els.nameInput.value     = "";
+      els.phoneInput.value    = "";
       els.countrySelect.value = "+33";
-      els.emailInput.value  = "";
+      els.emailInput.value    = "";
       els.modalHint.textContent = "";
-      validateForm();
-      els.overlay.classList.add("open");
-      els.nameInput.focus();
+
+      const games = studio.games || [];
+      if (games.length <= 1) {
+        // Jeu unique : aller directement au formulaire
+        state.selectedGameIndex = 0;
+        document.getElementById("gamePickerSection").style.display = "none";
+        document.getElementById("contactFormSection").style.display = "block";
+        els.launchBtn.style.display = "";
+        els.modalTitle.textContent    = `Lancer studio ${studio.label}`;
+        els.modalSubtitle.textContent = games[0]?.name || "";
+        validateForm();
+        els.overlay.classList.add("open");
+        els.nameInput.focus();
+      } else {
+        // Multi-jeux : afficher le sélecteur
+        document.getElementById("gamePickerSection").style.display = "block";
+        document.getElementById("contactFormSection").style.display = "none";
+        els.launchBtn.style.display = "none";
+        els.modalTitle.textContent    = `Studio ${studio.label}`;
+        els.modalSubtitle.textContent = "Choisissez un jeu :";
+        document.getElementById("gamePickerList").innerHTML =
+          games.map((g, i) => `<button class="game-choice-btn" data-game-idx="${i}">${escapeHtml(g.name)}</button>`).join("");
+        els.overlay.classList.add("open");
+      }
     }
 
     function closeModal() {
@@ -874,7 +948,8 @@
             name:        els.nameInput.value.trim(),
             phone:       els.phoneInput.value.trim(),
             countryCode: els.countrySelect.value,
-            email:       els.emailInput.value.trim()
+            email:       els.emailInput.value.trim(),
+            gameIndex:   state.selectedGameIndex
           })
         });
         els.modalHint.textContent = "Studio lancé.";
@@ -893,6 +968,22 @@
       const studio = state.studios.find(s => s.id === tile.dataset.id);
       if (!studio || studio.status === "busy" || studio.status === "unknown") return;
       openModal(studio);
+    });
+
+    document.getElementById("gamePickerList").addEventListener("click", e => {
+      const btn = e.target.closest("[data-game-idx]");
+      if (!btn) return;
+      const idx = parseInt(btn.dataset.gameIdx);
+      const game = (state.selectedStudio?.games || [])[idx];
+      if (!game) return;
+      state.selectedGameIndex = idx;
+      document.getElementById("gamePickerSection").style.display = "none";
+      document.getElementById("contactFormSection").style.display = "block";
+      els.launchBtn.style.display = "";
+      els.modalTitle.textContent    = `Lancer studio ${state.selectedStudio.label}`;
+      els.modalSubtitle.textContent = game.name;
+      validateForm();
+      els.nameInput.focus();
     });
 
     els.cancelBtn.addEventListener("click", closeModal);
@@ -922,7 +1013,13 @@
         list.innerHTML = '<div class="empty-config">Aucun studio configuré.<br>Cliquez sur <strong>+ Ajouter un studio</strong> pour commencer.</div>';
         return;
       }
-      list.innerHTML = cfgState.studios.map((s, i) => `
+      list.innerHTML = cfgState.studios.map((s, i) => {
+        const games = s.games || [];
+        const titleName = games.length === 1 ? escapeHtml(games[0].name) : `${games.length} jeu(x)`;
+        const gamesChips = games.map(g =>
+          `<span class="meta-chip">${escapeHtml(g.name)} · P${g.launchButton?.page}·R${g.launchButton?.row}·C${g.launchButton?.column}</span>`
+        ).join("");
+        return `
         <div class="studio-config-card">
           <div class="studio-config-order">
             <button class="btn-icon" data-move="${i}" data-dir="-1" title="Monter" ${i === 0 ? "disabled style='opacity:.3'" : ""}>▲</button>
@@ -930,11 +1027,11 @@
           </div>
           <div class="studio-config-main">
             <div class="studio-config-name">
-              <span>${escapeHtml(s.label)}</span>${escapeHtml(s.gameName)}
+              <span>${escapeHtml(s.label)}</span>${titleName}
             </div>
             <div class="studio-config-meta">
               <span class="meta-chip">REC: ${escapeHtml(s.recVar)}</span>
-              <span class="meta-chip">Page ${s.launchButton?.page ?? "?"} · R${s.launchButton?.row ?? "?"} · C${s.launchButton?.column ?? "?"}</span>
+              ${gamesChips}
               <span class="meta-chip">ID: ${escapeHtml(s.id)}</span>
             </div>
           </div>
@@ -942,8 +1039,8 @@
             <button class="btn-icon" data-edit="${s.id}" title="Modifier">✏️</button>
             <button class="btn-icon danger" data-delete="${s.id}" title="Supprimer">🗑️</button>
           </div>
-        </div>
-      `).join("");
+        </div>`;
+      }).join("");
     }
 
     document.getElementById("studioList").addEventListener("click", async e => {
@@ -994,11 +1091,42 @@
     }
 
     /* ---- Modal config ---- */
+    function renderCfgGames() {
+      const list = document.getElementById("cfgGamesList");
+      if (!cfgState.editingGames.length) {
+        list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:6px 0">Aucun jeu. Cliquez sur <em>+ Ajouter un jeu</em>.</div>';
+        return;
+      }
+      list.innerHTML = cfgState.editingGames.map((g, i) => `
+        <div class="game-entry" data-idx="${i}">
+          <input class="ge-name" type="text" placeholder="Nom du jeu" value="${escapeHtml(g.name)}" />
+          <div class="ge-btn-group">
+            <div class="ge-num-field"><label>P</label><input class="ge-page" type="number" min="0" value="${g.launchButton.page}" /></div>
+            <div class="ge-num-field"><label>R</label><input class="ge-rownum" type="number" min="0" value="${g.launchButton.row}" /></div>
+            <div class="ge-num-field"><label>C</label><input class="ge-col" type="number" min="0" value="${g.launchButton.column}" /></div>
+          </div>
+          <button class="btn-icon danger ge-delete" data-del-idx="${i}" title="Supprimer">🗑️</button>
+        </div>
+      `).join("");
+    }
+
+    function syncGamesFromDOM() {
+      cfgState.editingGames = Array.from(document.querySelectorAll("#cfgGamesList .game-entry")).map(row => ({
+        name: row.querySelector(".ge-name").value.trim(),
+        launchButton: {
+          page:   parseInt(row.querySelector(".ge-page").value)   || 0,
+          row:    parseInt(row.querySelector(".ge-rownum").value) || 0,
+          column: parseInt(row.querySelector(".ge-col").value)    || 0
+        }
+      }));
+    }
+
     function openConfigModal(id = null) {
       cfgState.editingId = id;
       document.getElementById("cfgIdError").textContent    = "";
       document.getElementById("cfgRecVarError").textContent = "";
       document.getElementById("cfgError").textContent      = "";
+      document.getElementById("cfgGamesError").textContent = "";
       document.getElementById("advancedSection").classList.remove("open");
       document.getElementById("advancedToggle").textContent = "▸ Variables contact Companion (avancé)";
 
@@ -1006,32 +1134,27 @@
         const s = cfgState.studios.find(x => x.id === id);
         if (!s) return;
         document.getElementById("configModalTitle").textContent = "Modifier le studio";
-        document.getElementById("cfgId").value          = s.id;
-        document.getElementById("cfgId").disabled       = true;
-        document.getElementById("cfgLabel").value       = s.label;
-        document.getElementById("cfgGameName").value    = s.gameName;
-        document.getElementById("cfgRecVar").value      = s.recVar;
-        document.getElementById("cfgPage").value        = s.launchButton?.page   ?? "";
-        document.getElementById("cfgRow").value         = s.launchButton?.row    ?? "";
-        document.getElementById("cfgColumn").value      = s.launchButton?.column ?? "";
+        document.getElementById("cfgId").value    = s.id;
+        document.getElementById("cfgId").disabled = true;
+        document.getElementById("cfgLabel").value = s.label;
+        document.getElementById("cfgRecVar").value = s.recVar;
         document.getElementById("cfgContactName").value  = s.contactVariables?.name  || "";
         document.getElementById("cfgContactPhone").value = s.contactVariables?.phone || "";
         document.getElementById("cfgContactEmail").value = s.contactVariables?.email || "";
+        cfgState.editingGames = (s.games || []).map(g => ({ name: g.name, launchButton: { ...g.launchButton } }));
       } else {
         document.getElementById("configModalTitle").textContent = "Nouveau studio";
         document.getElementById("cfgId").disabled  = false;
         document.getElementById("cfgId").value     = "";
         document.getElementById("cfgLabel").value  = "";
-        document.getElementById("cfgGameName").value   = "";
-        document.getElementById("cfgRecVar").value     = "";
-        document.getElementById("cfgPage").value       = "2";
-        document.getElementById("cfgRow").value        = "0";
-        document.getElementById("cfgColumn").value     = "0";
+        document.getElementById("cfgRecVar").value = "";
         document.getElementById("cfgContactName").value  = "";
         document.getElementById("cfgContactPhone").value = "";
         document.getElementById("cfgContactEmail").value = "";
+        cfgState.editingGames = [{ name: "", launchButton: { page: 2, row: 0, column: 0 } }];
       }
 
+      renderCfgGames();
       document.getElementById("configOverlay").classList.add("open");
     }
 
@@ -1040,19 +1163,16 @@
     }
 
     async function saveStudioFromModal() {
-      const id       = document.getElementById("cfgId").value.trim().toUpperCase();
-      const label    = document.getElementById("cfgLabel").value.trim();
-      const gameName = document.getElementById("cfgGameName").value.trim();
-      const recVar   = document.getElementById("cfgRecVar").value.trim();
-      const page     = parseInt(document.getElementById("cfgPage").value);
-      const row      = parseInt(document.getElementById("cfgRow").value);
-      const column   = parseInt(document.getElementById("cfgColumn").value);
+      const id     = document.getElementById("cfgId").value.trim().toUpperCase();
+      const label  = document.getElementById("cfgLabel").value.trim();
+      const recVar = document.getElementById("cfgRecVar").value.trim();
 
       // Validation
       let valid = true;
       document.getElementById("cfgIdError").textContent    = "";
       document.getElementById("cfgRecVarError").textContent = "";
       document.getElementById("cfgError").textContent      = "";
+      document.getElementById("cfgGamesError").textContent = "";
 
       if (!id) {
         document.getElementById("cfgIdError").textContent = "ID requis";
@@ -1065,13 +1185,20 @@
         valid = false;
       }
 
-      if (!label || !gameName) {
-        document.getElementById("cfgError").textContent = "Label et nom du jeu requis";
+      if (!label) {
+        document.getElementById("cfgError").textContent = "Label requis";
         valid = false;
       }
 
       if (!recVar) {
         document.getElementById("cfgRecVarError").textContent = "Variable REC requise";
+        valid = false;
+      }
+
+      syncGamesFromDOM();
+      const games = cfgState.editingGames.filter(g => g.name);
+      if (!games.length) {
+        document.getElementById("cfgGamesError").textContent = "Au moins un jeu requis";
         valid = false;
       }
 
@@ -1083,8 +1210,8 @@
       const contactEmail = document.getElementById("cfgContactEmail").value.trim() || `contact_${id}_email`;
 
       const studio = {
-        id, label, gameName, recVar,
-        launchButton:     { page, row, column },
+        id, label, recVar,
+        games,
         contactVariables: { name: contactName, phone: contactPhone, email: contactEmail }
       };
 
@@ -1102,6 +1229,23 @@
         document.getElementById("cfgError").textContent = e.message || "Erreur de sauvegarde";
       }
     }
+
+    // Gestion des jeux dans la modal config
+    document.getElementById("cfgGamesList").addEventListener("click", e => {
+      const delBtn = e.target.closest("[data-del-idx]");
+      if (!delBtn) return;
+      syncGamesFromDOM();
+      cfgState.editingGames.splice(parseInt(delBtn.dataset.delIdx), 1);
+      renderCfgGames();
+    });
+
+    document.getElementById("cfgAddGameBtn").addEventListener("click", () => {
+      syncGamesFromDOM();
+      cfgState.editingGames.push({ name: "", launchButton: { page: 2, row: 0, column: 0 } });
+      renderCfgGames();
+      const entries = document.querySelectorAll("#cfgGamesList .game-entry");
+      if (entries.length) entries[entries.length - 1].querySelector(".ge-name").focus();
+    });
 
     // Auto-remplissage de la variable REC depuis l'ID
     document.getElementById("cfgId").addEventListener("input", e => {

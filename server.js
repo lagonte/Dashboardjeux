@@ -131,19 +131,26 @@ function isWithinGracePeriod(lastValidatedAt) {
 
 async function companionGetCustomVariable(name) {
     const res = await axios.get(
-      `${CONFIG.companionUrl}/api/custom-variable/${encodeURIComponent(name)}/value`
+      `${CONFIG.companionUrl}/api/custom-variable/${encodeURIComponent(name)}/value`,
+      { timeout: 2000 }
     );
     return String(res.data?.value ?? res.data ?? "").trim();
   }
 
 async function companionSetCustomVariable(name, value) {
     await axios.post(
-      `${CONFIG.companionUrl}/api/custom-variable/${encodeURIComponent(name)}/value?value=${encodeURIComponent(String(value ?? ""))}`
+      `${CONFIG.companionUrl}/api/custom-variable/${encodeURIComponent(name)}/value?value=${encodeURIComponent(String(value ?? ""))}`,
+      null,
+      { timeout: 3000 }
     );
 }
 
 async function companionPressButton(page, row, column) {
-    await axios.post(`${CONFIG.companionUrl}/api/location/${page}/${row}/${column}/press`);
+    await axios.post(
+      `${CONFIG.companionUrl}/api/location/${page}/${row}/${column}/press`,
+      null,
+      { timeout: 3000 }
+    );
 }
 
 async function getStudioRuntimeState(studio, contact) {
@@ -171,7 +178,7 @@ async function getStudioRuntimeState(studio, contact) {
     return {
       id: studio.id,
       label: studio.label,
-      gameName: studio.gameName,
+      games: studio.games || [],
       status,
       companionOk,
       recValue,
@@ -393,8 +400,14 @@ app.post("/api/studios/:id/launch", requireLicense, async (req, res) => {
       const countryCode = String(req.body.countryCode || "+33").trim();
       const phone = normalizePhone(rawPhone, countryCode);
       const email = String(req.body.email || "").trim().toLowerCase();
+      const gameIndex = parseInt(req.body.gameIndex ?? 0);
       const sessionId = generateSessionId(studio.id);
-  
+
+      const game = (studio.games || [])[gameIndex];
+      if (!game) {
+        return res.status(400).json({ error: "Jeu introuvable" });
+      }
+
       if (!name || !rawPhone || !email) {
         return res.status(400).json({ error: "Nom, téléphone et email requis" });
       }
@@ -424,9 +437,9 @@ app.post("/api/studios/:id/launch", requireLicense, async (req, res) => {
       await companionSetCustomVariable(studio.contactVariables.phone, phone);
       await companionSetCustomVariable(studio.contactVariables.email, email);
       await companionPressButton(
-        studio.launchButton.page,
-        studio.launchButton.row,
-        studio.launchButton.column
+        game.launchButton.page,
+        game.launchButton.row,
+        game.launchButton.column
       );
 
       // Companion OK → persistance des données
@@ -445,6 +458,7 @@ app.post("/api/studios/:id/launch", requireLicense, async (req, res) => {
       await appendLog({
         studioId: studio.id,
         sessionId,
+        gameName: game.name || "",
         name,
         phone,
         email,
@@ -453,7 +467,7 @@ app.post("/api/studios/:id/launch", requireLicense, async (req, res) => {
 
       await writeCurrentStudioSession(studio.id, {
         studioId: studio.id,
-        gameName: studio.gameName || "",
+        gameName: game.name || "",
         sessionId,
         name,
         phone,
