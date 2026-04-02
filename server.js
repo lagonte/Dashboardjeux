@@ -154,8 +154,16 @@ async function getStudioRuntimeState(studio, contact) {
       recValue = await companionGetCustomVariable(studio.recVar);
       console.log("REC READ", studio.id, studio.recVar, recValue);
     } catch (e) {
-      companionOk = false;
-      console.error("Companion read error:", studio.recVar, e.message);
+      if (e.response) {
+        // Companion a répondu (ex: 404 variable inconnue) → il tourne, variable absente
+        companionOk = true;
+        recValue = null;
+        console.warn("Companion variable introuvable:", studio.recVar, e.response.status);
+      } else {
+        // Pas de réponse du tout (ECONNREFUSED, timeout) → vraiment hors ligne
+        companionOk = false;
+        console.error("Companion hors ligne:", studio.recVar, e.message);
+      }
     }
 
     const status = !companionOk ? "unknown" : recValue === "1" ? "busy" : "free";
@@ -504,10 +512,16 @@ app.post("/api/admin/companion-url", requireLicense, async (req, res) => {
 
 app.get("/api/admin/companion-test", requireLicense, async (_req, res) => {
   try {
-    await axios.get(`${CONFIG.companionUrl}/api/custom-variable`, { timeout: 3000 });
+    await axios.get(`${CONFIG.companionUrl}/`, { timeout: 3000 });
     res.json({ ok: true, url: CONFIG.companionUrl });
   } catch (e) {
-    res.status(503).json({ ok: false, url: CONFIG.companionUrl, error: e.message });
+    if (e.response) {
+      // Companion a répondu (même avec un code d'erreur) → il tourne
+      res.json({ ok: true, url: CONFIG.companionUrl });
+    } else {
+      // Aucune réponse → vraiment hors ligne
+      res.status(503).json({ ok: false, url: CONFIG.companionUrl, error: e.message });
+    }
   }
 });
 
