@@ -27,17 +27,14 @@
       min-height:100vh;
     }
 
-    .wrap{
-      padding:16px 20px 28px;
-    }
+    .wrap{ padding:16px 20px 28px; }
 
+    /* ---- Topbar ---- */
     .topbar{
       display:flex;
       justify-content:space-between;
       align-items:center;
       margin-bottom:20px;
-      font-size:26px;
-      font-weight:800;
     }
 
     .clock{
@@ -46,6 +43,26 @@
       font-weight:900;
     }
 
+    /* ---- Tabs ---- */
+    .tabs{ display:flex; gap:6px; }
+
+    .tab{
+      background:rgba(255,255,255,.06);
+      color:var(--muted);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      padding:9px 22px;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+      min-height:unset;
+      transition:.15s;
+    }
+
+    .tab:hover{ background:rgba(255,255,255,.1); color:#fff; }
+    .tab.active{ background:var(--blue); color:#fff; border-color:var(--blue); }
+
+    /* ---- Pilotage grid ---- */
     .grid{
       display:grid;
       grid-template-columns:repeat(3, minmax(0,1fr));
@@ -86,10 +103,8 @@
 
     .studio-dot{
       position:absolute;
-      top:14px;
-      right:14px;
-      width:12px;
-      height:12px;
+      top:14px; right:14px;
+      width:12px; height:12px;
       border-radius:999px;
       background:rgba(255,255,255,.1);
     }
@@ -121,6 +136,99 @@
       min-height:22px;
     }
 
+    /* ---- Config tab ---- */
+    .config-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:20px;
+    }
+
+    .config-title{ font-size:22px; font-weight:800; }
+
+    .studio-config-card{
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      padding:16px 20px;
+      display:flex;
+      align-items:center;
+      gap:16px;
+      margin-bottom:12px;
+      transition:.15s;
+    }
+
+    .studio-config-card:hover{ border-color:rgba(255,255,255,.15); }
+
+    .studio-config-order{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      flex-shrink:0;
+    }
+
+    .studio-config-main{ flex:1; min-width:0; }
+
+    .studio-config-name{
+      font-size:17px;
+      font-weight:700;
+      margin-bottom:5px;
+    }
+
+    .studio-config-name span{
+      color:var(--blue);
+      margin-right:6px;
+    }
+
+    .studio-config-meta{
+      font-size:13px;
+      color:var(--muted);
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+    }
+
+    .meta-chip{
+      background:rgba(255,255,255,.06);
+      border-radius:6px;
+      padding:2px 8px;
+      font-family:monospace;
+      font-size:12px;
+    }
+
+    .studio-config-actions{
+      display:flex;
+      gap:8px;
+      flex-shrink:0;
+    }
+
+    .btn-icon{
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      border-radius:10px;
+      width:38px; height:38px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      font-size:16px;
+      min-height:unset;
+      padding:0;
+      transition:.15s;
+      border:0;
+    }
+
+    .btn-icon:hover{ background:rgba(255,255,255,.16); }
+    .btn-icon.danger:hover{ background:rgba(239,68,68,.3); }
+
+    .empty-config{
+      text-align:center;
+      color:var(--muted);
+      padding:48px 0;
+      font-size:16px;
+    }
+
+    /* ---- Overlays & modals ---- */
     .overlay{
       position:fixed;
       inset:0;
@@ -141,21 +249,15 @@
       border-radius:24px;
       box-shadow:0 20px 50px rgba(0,0,0,.35);
       padding:22px;
+      max-height:90vh;
+      overflow-y:auto;
     }
 
-    .modal h2{
-      margin:0 0 8px;
-      font-size:28px;
-    }
+    .modal h2{ margin:0 0 8px; font-size:28px; }
+    .modal p{ margin:0 0 16px; color:var(--muted); }
 
-    .modal p{
-      margin:0 0 16px;
-      color:var(--muted);
-    }
-
-    .field{
-      margin-bottom:14px;
-    }
+    /* ---- Fields ---- */
+    .field{ margin-bottom:14px; }
 
     .field label{
       display:block;
@@ -182,19 +284,152 @@
       box-shadow:0 0 0 4px rgba(47,109,246,.16);
     }
 
-    .error{
-      min-height:18px;
-      margin-top:6px;
-      color:#ff9f9f;
+    .field input:disabled{
+      opacity:.5;
+      cursor:not-allowed;
+    }
+
+    .field-row{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:10px;
+    }
+
+    .field-row-2{
+      display:grid;
+      grid-template-columns:1fr 2fr;
+      gap:10px;
+    }
+
+    .field-sub label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:600;
+      margin-bottom:6px;
+    }
+
+    .field-sub input{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px 10px;
+      font-size:16px;
+      color:#fff;
+      background:#081126;
+      outline:none;
+    }
+
+    .field-sub input:focus{
+      border-color:rgba(47,109,246,.85);
+      box-shadow:0 0 0 3px rgba(47,109,246,.16);
+    }
+
+    .error{ min-height:18px; margin-top:6px; color:#ff9f9f; font-size:13px; }
+
+    /* ---- Advanced toggle ---- */
+    .advanced-toggle{
+      background:none;
+      border:1px solid rgba(255,255,255,.1);
+      color:var(--muted);
       font-size:13px;
+      font-weight:600;
+      border-radius:10px;
+      padding:9px 14px;
+      cursor:pointer;
+      min-height:unset;
+      width:100%;
+      margin-bottom:12px;
+      text-align:left;
+      transition:.15s;
     }
 
-    .row{
+    .advanced-toggle:hover{ border-color:rgba(255,255,255,.22); color:#fff; }
+    .advanced-section{ display:none; }
+    .advanced-section.open{ display:block; }
+
+    /* ---- Statut inconnu (Companion hors ligne) ---- */
+    .studio-btn.unknown{
+      border-color:rgba(251,146,60,.5);
+      background:rgba(251,146,60,.06);
+      cursor:not-allowed;
+      opacity:.80;
+    }
+    .studio-btn.unknown .studio-dot{ background:#f97316; }
+    .studio-btn.unknown .studio-status{ color:#fb923c; }
+
+    /* ---- Companion card (onglet config) ---- */
+    .companion-card{
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      padding:16px 20px;
+      margin-bottom:20px;
+    }
+    .companion-card-header{
       display:flex;
+      align-items:center;
       gap:12px;
-      margin-top:8px;
+    }
+    .companion-card-label{
+      font-size:12px;
+      font-weight:700;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.07em;
+      flex-shrink:0;
+    }
+    .companion-url-row{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex:1;
+      min-width:0;
+    }
+    .companion-url-text{
+      font-family:monospace;
+      font-size:15px;
+      color:#fff;
+      flex:1;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .companion-ping{
+      font-size:12px;
+      font-weight:700;
+      padding:3px 10px;
+      border-radius:20px;
+      flex-shrink:0;
+      min-width:60px;
+      text-align:center;
+    }
+    .companion-ping.ok{ background:rgba(34,197,94,.15); color:var(--green); }
+    .companion-ping.ko{ background:rgba(239,68,68,.15); color:var(--red); }
+    .companion-edit-row{
+      margin-top:12px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .companion-edit-row input{
+      flex:1;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px 14px;
+      font-size:15px;
+      color:#fff;
+      background:#081126;
+      outline:none;
+      font-family:monospace;
+    }
+    .companion-edit-row input:focus{
+      border-color:rgba(47,109,246,.85);
+      box-shadow:0 0 0 3px rgba(47,109,246,.16);
     }
 
+    /* ---- Buttons ---- */
     button{
       border:0;
       border-radius:16px;
@@ -205,23 +440,15 @@
       cursor:pointer;
     }
 
-    .btn-secondary{
-      background:#243255;
-      color:#fff;
-      flex:1;
-    }
+    .btn-secondary{ background:#243255; color:#fff; flex:1; }
+    .btn-primary{ background:var(--blue); color:#fff; flex:1; }
+    .btn-sm{ min-height:42px; padding:10px 18px; font-size:15px; flex:none; }
 
-    .btn-primary{
-      background:var(--blue);
-      color:#fff;
-      flex:1;
-    }
+    button:disabled{ opacity:.45; cursor:not-allowed; }
 
-    button:disabled{
-      opacity:.45;
-      cursor:not-allowed;
-    }
+    .row{ display:flex; gap:12px; margin-top:12px; }
 
+    /* ---- License screen ---- */
     .license-screen{
       min-height:100vh;
       display:none;
@@ -240,15 +467,8 @@
       padding:24px;
     }
 
-    .license-box h1{
-      margin:0 0 10px;
-      font-size:30px;
-    }
-
-    .license-box p{
-      color:var(--muted);
-      margin:0 0 16px;
-    }
+    .license-box h1{ margin:0 0 10px; font-size:30px; }
+    .license-box p{ color:var(--muted); margin:0 0 16px; }
 
     .license-box input{
       width:100%;
@@ -258,49 +478,83 @@
       font-size:18px;
       color:#fff;
       background:#081126;
+      outline:none;
       margin-bottom:12px;
     }
 
-    .hint{
-      color:var(--muted);
-      font-size:13px;
-      margin-top:8px;
-      min-height:18px;
-    }
+    .hint{ color:var(--muted); font-size:13px; margin-top:8px; min-height:18px; }
 
-    @media (max-width: 1100px){
-      .grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
-    }
-
-    @media (max-width: 720px){
+    @media (max-width:1100px){ .grid{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
+    @media (max-width:720px){
       .grid{ grid-template-columns:1fr; }
-      .topbar{ font-size:22px; }
       .clock{ font-size:24px; }
+      .field-row{ grid-template-columns:1fr; }
+      .field-row-2{ grid-template-columns:1fr; }
     }
   </style>
 </head>
 <body>
+
+  <!-- ===== Licence ===== -->
   <div id="licenseScreen" class="license-screen">
     <div class="license-box">
       <h1>Activation licence</h1>
-      <p>Entrez votre clé licence pour activer l’application locale.</p>
+      <p>Entrez votre clé licence pour activer l'application.</p>
       <input id="licenseKeyInput" type="text" placeholder="XXXX-XXXX-XXXX" />
       <button id="activateBtn" class="btn-primary" style="width:100%">Activer</button>
       <div id="licenseHint" class="hint"></div>
     </div>
   </div>
 
+  <!-- ===== App ===== -->
   <div id="appRoot" style="display:none">
     <div class="wrap">
+
       <div class="topbar">
-        <div>Pilotage studios</div>
+        <div class="tabs">
+          <button class="tab active" data-tab="pilotage">Pilotage</button>
+          <button class="tab" data-tab="config">Configuration</button>
+        </div>
         <div id="clock" class="clock">--:--:--</div>
       </div>
 
-      <div id="grid" class="grid"></div>
+      <!-- Tab : Pilotage -->
+      <div id="tab-pilotage">
+        <div id="grid" class="grid"></div>
+      </div>
+
+      <!-- Tab : Configuration -->
+      <div id="tab-config" style="display:none">
+
+        <!-- Connexion Companion -->
+        <div class="companion-card">
+          <div class="companion-card-header">
+            <span class="companion-card-label">Companion</span>
+            <div class="companion-url-row">
+              <span id="companionUrlText" class="companion-url-text">…</span>
+              <span id="companionPing" class="companion-ping"></span>
+              <button class="btn-icon" id="testCompanionBtn" title="Tester la connexion">⚡</button>
+              <button class="btn-icon" id="editCompanionBtn" title="Modifier l'URL">✏️</button>
+            </div>
+          </div>
+          <div id="companionEditRow" class="companion-edit-row" style="display:none">
+            <input id="companionUrlInput" type="text" placeholder="http://192.168.1.50:8000" />
+            <button class="btn-primary btn-sm" id="saveCompanionBtn">OK</button>
+            <button class="btn-secondary btn-sm" id="cancelCompanionBtn">✕</button>
+          </div>
+        </div>
+
+        <div class="config-header">
+          <div class="config-title">Studios configurés</div>
+          <button id="addStudioBtn" class="btn-primary btn-sm">+ Ajouter un studio</button>
+        </div>
+        <div id="studioList"></div>
+      </div>
+
     </div>
   </div>
 
+  <!-- ===== Modal lancement studio ===== -->
   <div id="overlay" class="overlay">
     <div class="modal">
       <h2 id="modalTitle">Lancer studio</h2>
@@ -347,116 +601,227 @@
     </div>
   </div>
 
+  <!-- ===== Modal configuration studio ===== -->
+  <div id="configOverlay" class="overlay">
+    <div class="modal">
+      <h2 id="configModalTitle">Nouveau studio</h2>
+
+      <div class="field">
+        <label>ID du studio</label>
+        <input id="cfgId" type="text" placeholder="ST1" />
+        <div id="cfgIdError" class="error"></div>
+      </div>
+
+      <div class="field-row-2" style="margin-bottom:14px">
+        <div class="field-sub">
+          <label>Label affiché</label>
+          <input id="cfgLabel" type="text" placeholder="1" />
+        </div>
+        <div class="field-sub">
+          <label>Nom du jeu</label>
+          <input id="cfgGameName" type="text" placeholder="Le premier qui rit..." />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Variable REC Companion</label>
+        <input id="cfgRecVar" type="text" placeholder="REC_ST1" />
+        <div id="cfgRecVarError" class="error"></div>
+      </div>
+
+      <div class="field">
+        <label>Bouton Companion à presser</label>
+        <div class="field-row">
+          <div class="field-sub">
+            <label>Page</label>
+            <input id="cfgPage" type="number" min="0" placeholder="2" />
+          </div>
+          <div class="field-sub">
+            <label>Rangée</label>
+            <input id="cfgRow" type="number" min="0" placeholder="0" />
+          </div>
+          <div class="field-sub">
+            <label>Colonne</label>
+            <input id="cfgColumn" type="number" min="0" placeholder="0" />
+          </div>
+        </div>
+      </div>
+
+      <button class="advanced-toggle" id="advancedToggle">▸ Variables contact Companion (avancé)</button>
+      <div class="advanced-section" id="advancedSection">
+        <div class="field">
+          <label>Variable nom</label>
+          <input id="cfgContactName" type="text" placeholder="contact_ST1_name" />
+        </div>
+        <div class="field">
+          <label>Variable téléphone</label>
+          <input id="cfgContactPhone" type="text" placeholder="contact_ST1_phone" />
+        </div>
+        <div class="field">
+          <label>Variable email</label>
+          <input id="cfgContactEmail" type="text" placeholder="contact_ST1_email" />
+        </div>
+      </div>
+
+      <div id="cfgError" class="error"></div>
+
+      <div class="row">
+        <button id="configCancelBtn" class="btn-secondary">Annuler</button>
+        <button id="configSaveBtn" class="btn-primary">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    /* ============================================================
+       ÉTAT
+    ============================================================ */
     const state = {
       studios: [],
       selectedStudio: null,
       submitting: false
     };
 
-    const els = {
-      appRoot: document.getElementById("appRoot"),
-      licenseScreen: document.getElementById("licenseScreen"),
-      licenseKeyInput: document.getElementById("licenseKeyInput"),
-      activateBtn: document.getElementById("activateBtn"),
-      licenseHint: document.getElementById("licenseHint"),
-      clock: document.getElementById("clock"),
-      grid: document.getElementById("grid"),
-      overlay: document.getElementById("overlay"),
-      modalTitle: document.getElementById("modalTitle"),
-      modalSubtitle: document.getElementById("modalSubtitle"),
-      nameInput: document.getElementById("nameInput"),
-      phoneInput: document.getElementById("phoneInput"),
-      countrySelect: document.getElementById("countrySelect"),
-      emailInput: document.getElementById("emailInput"),
-      nameError: document.getElementById("nameError"),
-      phoneError: document.getElementById("phoneError"),
-      emailError: document.getElementById("emailError"),
-      launchBtn: document.getElementById("launchBtn"),
-      cancelBtn: document.getElementById("cancelBtn"),
-      modalHint: document.getElementById("modalHint")
+    const cfgState = {
+      studios: [],
+      editingId: null   // null = nouveau, string = modification
     };
 
+    /* ============================================================
+       ÉLÉMENTS DOM
+    ============================================================ */
+    const els = {
+      appRoot:         document.getElementById("appRoot"),
+      licenseScreen:   document.getElementById("licenseScreen"),
+      licenseKeyInput: document.getElementById("licenseKeyInput"),
+      activateBtn:     document.getElementById("activateBtn"),
+      licenseHint:     document.getElementById("licenseHint"),
+      clock:           document.getElementById("clock"),
+      grid:            document.getElementById("grid"),
+      overlay:         document.getElementById("overlay"),
+      modalTitle:      document.getElementById("modalTitle"),
+      modalSubtitle:   document.getElementById("modalSubtitle"),
+      nameInput:       document.getElementById("nameInput"),
+      phoneInput:      document.getElementById("phoneInput"),
+      countrySelect:   document.getElementById("countrySelect"),
+      emailInput:      document.getElementById("emailInput"),
+      nameError:       document.getElementById("nameError"),
+      phoneError:      document.getElementById("phoneError"),
+      emailError:      document.getElementById("emailError"),
+      launchBtn:       document.getElementById("launchBtn"),
+      cancelBtn:       document.getElementById("cancelBtn"),
+      modalHint:       document.getElementById("modalHint")
+    };
+
+    /* ============================================================
+       UTILS
+    ============================================================ */
     function normalizePhone(phone) {
       let p = String(phone || "").replace(/[^\d+]/g, "").trim();
-      const countryCode = els.countrySelect?.value || "+33";
-
+      const cc = els.countrySelect?.value || "+33";
       if (!p) return "";
       if (p.startsWith("+")) return p;
       if (p.startsWith("00")) return "+" + p.slice(2);
-      if (p.startsWith("0")) return countryCode + p.slice(1);
-      return countryCode + p;
+      if (p.startsWith("0")) return cc + p.slice(1);
+      return cc + p;
     }
 
-    function validName(name) {
-      return String(name || "").trim().length >= 2;
-    }
+    function validName(n)  { return String(n||"").trim().length >= 2; }
+    function validPhone(p) { return /^\+\d{8,15}$/.test(normalizePhone(p)); }
+    function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e||"").trim()); }
 
-    function validPhone(phone) {
-      const normalized = normalizePhone(phone);
-      return /^\+\d{8,15}$/.test(normalized);
-    }
-
-    function validEmail(email) {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
-    }
-
-    function validatePhone(phone, countryCode = "+33") {
-      const normalized = normalizePhone(phone, countryCode);
-      return /^\+\d{8,15}$/.test(normalized);
+    function escapeHtml(str) {
+      return String(str||"")
+        .replaceAll("&","&amp;").replaceAll("<","&lt;")
+        .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
     }
 
     async function api(url, options = {}) {
-      try {
-        const res = await fetch(url, {
-          headers: { "Content-Type": "application/json" },
-          ...options
-        });
-
-        const text = await res.text();
-        let data = {};
-
-        try {
-          data = text ? JSON.parse(text) : {};
-        } catch {
-          data = { raw: text };
-        }
-
-        if (!res.ok) {
-          throw new Error(data.error || data.raw || `HTTP ${res.status}`);
-        }
-
-        return data;
-      } catch (error) {
-        console.error("API failed:", url, error);
-        throw new Error(error.message || "Fetch failed");
-      }
+      const res  = await fetch(url, { headers:{"Content-Type":"application/json"}, ...options });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+      if (!res.ok) throw new Error(data.error || data.raw || `HTTP ${res.status}`);
+      return data;
     }
 
+    /* ============================================================
+       HORLOGE
+    ============================================================ */
     function updateClock() {
       els.clock.textContent = new Date().toLocaleTimeString("fr-FR");
     }
 
-    function escapeHtml(str) {
-      return String(str || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+    /* ============================================================
+       ONGLETS
+    ============================================================ */
+    document.querySelectorAll(".tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const tab = btn.dataset.tab;
+        document.getElementById("tab-pilotage").style.display = tab === "pilotage" ? "block" : "none";
+        document.getElementById("tab-config").style.display   = tab === "config"   ? "block" : "none";
+        if (tab === "config")   loadConfig().catch(() => {});
+        if (tab === "pilotage") loadStudios().catch(() => {});
+      });
+    });
+
+    /* ============================================================
+       LICENCE
+    ============================================================ */
+    async function checkLicense() {
+      try {
+        const status = await api("/api/license/status");
+        if (status.valid) {
+          els.licenseScreen.classList.remove("open");
+          els.appRoot.style.display = "block";
+          els.licenseHint.textContent = "";
+          await loadStudios();
+          return;
+        }
+        els.appRoot.style.display = "none";
+        els.licenseScreen.classList.add("open");
+        els.licenseHint.textContent = "Licence invalide ou non activée.";
+      } catch (error) {
+        els.appRoot.style.display = "none";
+        els.licenseScreen.classList.add("open");
+        els.licenseHint.textContent = error.message || "Erreur de connexion";
+      }
     }
 
+    async function activateLicense() {
+      const key = els.licenseKeyInput.value.trim();
+      if (!key) { els.licenseHint.textContent = "Entrez une clé licence."; return; }
+      els.licenseHint.textContent = "Activation...";
+      try {
+        await api("/api/license/activate", { method:"POST", body:JSON.stringify({ licenseKey:key }) });
+        els.licenseScreen.classList.remove("open");
+        els.appRoot.style.display = "block";
+        els.licenseHint.textContent = "";
+        await loadStudios();
+      } catch (error) {
+        els.licenseHint.textContent = error.message || "Activation impossible";
+      }
+    }
+
+    /* ============================================================
+       PILOTAGE
+    ============================================================ */
     function renderStudios() {
-      els.grid.innerHTML = state.studios.map((studio) => {
-        const busy = studio.status === "busy";
+      els.grid.innerHTML = state.studios.map(studio => {
+        const busy    = studio.status === "busy";
+        const unknown = studio.status === "unknown";
+        const cls     = busy ? "busy" : unknown ? "unknown" : "free";
+        const statusText = busy ? "Indisponible" : unknown ? "Companion hors ligne" : "Disponible";
         return `
-          <div class="studio-btn ${busy ? "busy" : "free"}" data-id="${studio.id}">
+          <div class="studio-btn ${cls}" data-id="${studio.id}">
             <div class="studio-dot"></div>
-            <div class="studio-number">${studio.label}</div>
+            <div class="studio-number">${escapeHtml(studio.label)}</div>
             <div class="studio-title">${escapeHtml(studio.gameName)}</div>
-            <div class="studio-status">${busy ? "Indisponible" : "Disponible"}</div>
-          </div>
-        `;
+            <div class="studio-status">${statusText}</div>
+          </div>`;
       }).join("");
     }
 
@@ -466,63 +831,16 @@
       renderStudios();
     }
 
-    async function checkLicense() {
-      try {
-        const status = await api("/api/license/status");
-
-        if (status.valid) {
-          els.licenseScreen.classList.remove("open");
-          els.appRoot.style.display = "block";
-          els.licenseHint.textContent = "";
-          await loadStudios();
-          return;
-        }
-
-        els.appRoot.style.display = "none";
-        els.licenseScreen.classList.add("open");
-        els.licenseHint.textContent = "Licence invalide ou non activée.";
-      } catch (error) {
-        els.appRoot.style.display = "none";
-        els.licenseScreen.classList.add("open");
-        els.licenseHint.textContent = error.message || "Fetch failed";
-      }
-    }
-
-    async function activateLicense() {
-      const licenseKey = els.licenseKeyInput.value.trim();
-
-      if (!licenseKey) {
-        els.licenseHint.textContent = "Entrez une clé licence.";
-        return;
-      }
-
-      els.licenseHint.textContent = "Activation...";
-
-      try {
-        await api("/api/license/activate", {
-          method: "POST",
-          body: JSON.stringify({ licenseKey })
-        });
-
-        els.licenseScreen.classList.remove("open");
-        els.appRoot.style.display = "block";
-        els.licenseHint.textContent = "";
-
-        await loadStudios();
-      } catch (error) {
-        els.licenseHint.textContent = error.message || "Activation impossible";
-      }
-    }
-
+    /* ---- Modal lancement ---- */
     function openModal(studio) {
       state.selectedStudio = studio;
       state.submitting = false;
-      els.modalTitle.textContent = `Lancer studio ${studio.label}`;
+      els.modalTitle.textContent    = `Lancer studio ${studio.label}`;
       els.modalSubtitle.textContent = studio.gameName;
-      els.nameInput.value = "";
-      els.phoneInput.value = "";
+      els.nameInput.value   = "";
+      els.phoneInput.value  = "";
       els.countrySelect.value = "+33";
-      els.emailInput.value = "";
+      els.emailInput.value  = "";
       els.modalHint.textContent = "";
       validateForm();
       els.overlay.classList.add("open");
@@ -535,45 +853,32 @@
     }
 
     function validateForm() {
-      const name = els.nameInput.value;
-      const phone = els.phoneInput.value;
-      const email = els.emailInput.value;
-
-      const nameOk = validName(name);
-      const phoneOk = validPhone(phone);
-      const emailOk = validEmail(email);
-
-      els.nameError.textContent = nameOk || !name ? "" : "Nom requis";
-      els.phoneError.textContent = phoneOk || !phone ? "" : "Numéro invalide";
-      els.emailError.textContent = emailOk || !email ? "" : "Email invalide";
-
+      const nameOk  = validName(els.nameInput.value);
+      const phoneOk = validPhone(els.phoneInput.value);
+      const emailOk = validEmail(els.emailInput.value);
+      els.nameError.textContent  = nameOk  || !els.nameInput.value  ? "" : "Nom requis";
+      els.phoneError.textContent = phoneOk || !els.phoneInput.value ? "" : "Numéro invalide";
+      els.emailError.textContent = emailOk || !els.emailInput.value ? "" : "Email invalide";
       els.launchBtn.disabled = !(nameOk && phoneOk && emailOk) || state.submitting;
     }
 
     async function launchSelectedStudio() {
       if (!state.selectedStudio || state.submitting) return;
-
       state.submitting = true;
       validateForm();
       els.modalHint.textContent = "Lancement en cours...";
-
       try {
         await api(`/api/studios/${state.selectedStudio.id}/launch`, {
-          method: "POST",
+          method:"POST",
           body: JSON.stringify({
-            name: els.nameInput.value.trim(),
-            phone: els.phoneInput.value.trim(),
+            name:        els.nameInput.value.trim(),
+            phone:       els.phoneInput.value.trim(),
             countryCode: els.countrySelect.value,
-            email: els.emailInput.value.trim()
+            email:       els.emailInput.value.trim()
           })
         });
-
         els.modalHint.textContent = "Studio lancé.";
-
-        // recharge les studios
         await loadStudios();
-
-        // ferme immédiatement
         closeModal();
       } catch (error) {
         state.submitting = false;
@@ -582,22 +887,18 @@
       }
     }
 
-    els.grid.addEventListener("click", (e) => {
+    els.grid.addEventListener("click", e => {
       const tile = e.target.closest("[data-id]");
       if (!tile) return;
-
-      const studio = state.studios.find((s) => s.id === tile.dataset.id);
-      if (!studio || studio.status === "busy") return;
-
+      const studio = state.studios.find(s => s.id === tile.dataset.id);
+      if (!studio || studio.status === "busy" || studio.status === "unknown") return;
       openModal(studio);
     });
 
     els.cancelBtn.addEventListener("click", closeModal);
-    els.overlay.addEventListener("click", (e) => {
-      if (e.target === els.overlay) closeModal();
-    });
+    els.overlay.addEventListener("click", e => { if (e.target === els.overlay) closeModal(); });
 
-    [els.nameInput, els.phoneInput, els.emailInput, els.countrySelect].forEach((el) => {
+    [els.nameInput, els.phoneInput, els.emailInput, els.countrySelect].forEach(el => {
       el.addEventListener("input", validateForm);
       el.addEventListener("change", validateForm);
     });
@@ -612,13 +913,288 @@
     els.launchBtn.addEventListener("click", launchSelectedStudio);
     els.activateBtn.addEventListener("click", activateLicense);
 
+    /* ============================================================
+       CONFIGURATION
+    ============================================================ */
+    function renderStudioList() {
+      const list = document.getElementById("studioList");
+      if (!cfgState.studios.length) {
+        list.innerHTML = '<div class="empty-config">Aucun studio configuré.<br>Cliquez sur <strong>+ Ajouter un studio</strong> pour commencer.</div>';
+        return;
+      }
+      list.innerHTML = cfgState.studios.map((s, i) => `
+        <div class="studio-config-card">
+          <div class="studio-config-order">
+            <button class="btn-icon" data-move="${i}" data-dir="-1" title="Monter" ${i === 0 ? "disabled style='opacity:.3'" : ""}>▲</button>
+            <button class="btn-icon" data-move="${i}" data-dir="1"  title="Descendre" ${i === cfgState.studios.length - 1 ? "disabled style='opacity:.3'" : ""}>▼</button>
+          </div>
+          <div class="studio-config-main">
+            <div class="studio-config-name">
+              <span>${escapeHtml(s.label)}</span>${escapeHtml(s.gameName)}
+            </div>
+            <div class="studio-config-meta">
+              <span class="meta-chip">REC: ${escapeHtml(s.recVar)}</span>
+              <span class="meta-chip">Page ${s.launchButton?.page ?? "?"} · R${s.launchButton?.row ?? "?"} · C${s.launchButton?.column ?? "?"}</span>
+              <span class="meta-chip">ID: ${escapeHtml(s.id)}</span>
+            </div>
+          </div>
+          <div class="studio-config-actions">
+            <button class="btn-icon" data-edit="${s.id}" title="Modifier">✏️</button>
+            <button class="btn-icon danger" data-delete="${s.id}" title="Supprimer">🗑️</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    document.getElementById("studioList").addEventListener("click", async e => {
+      const editBtn   = e.target.closest("[data-edit]");
+      const deleteBtn = e.target.closest("[data-delete]");
+      const moveBtn   = e.target.closest("[data-move]");
+
+      if (editBtn)   openConfigModal(editBtn.dataset.edit);
+      if (deleteBtn) await deleteStudio(deleteBtn.dataset.delete);
+      if (moveBtn)   await moveStudio(parseInt(moveBtn.dataset.move), parseInt(moveBtn.dataset.dir));
+    });
+
+    async function loadConfig() {
+      const [cfgData, urlData] = await Promise.all([
+        api("/api/admin/config"),
+        api("/api/admin/companion-url")
+      ]);
+      cfgState.studios = cfgData.studios || [];
+      cfgState.companionUrl = urlData.url || "";
+      document.getElementById("companionUrlText").textContent  = cfgState.companionUrl;
+      document.getElementById("companionUrlInput").value       = cfgState.companionUrl;
+      document.getElementById("companionPing").textContent     = "";
+      document.getElementById("companionPing").className       = "companion-ping";
+      renderStudioList();
+    }
+
+    async function saveConfig() {
+      await api("/api/admin/config", {
+        method: "POST",
+        body:   JSON.stringify({ studios: cfgState.studios })
+      });
+      renderStudioList();
+    }
+
+    async function deleteStudio(id) {
+      if (!confirm(`Supprimer le studio "${id}" ?`)) return;
+      cfgState.studios = cfgState.studios.filter(s => s.id !== id);
+      await saveConfig();
+    }
+
+    async function moveStudio(index, dir) {
+      const newIndex = index + dir;
+      if (newIndex < 0 || newIndex >= cfgState.studios.length) return;
+      const arr = [...cfgState.studios];
+      [arr[index], arr[newIndex]] = [arr[newIndex], arr[index]];
+      cfgState.studios = arr;
+      await saveConfig();
+    }
+
+    /* ---- Modal config ---- */
+    function openConfigModal(id = null) {
+      cfgState.editingId = id;
+      document.getElementById("cfgIdError").textContent    = "";
+      document.getElementById("cfgRecVarError").textContent = "";
+      document.getElementById("cfgError").textContent      = "";
+      document.getElementById("advancedSection").classList.remove("open");
+      document.getElementById("advancedToggle").textContent = "▸ Variables contact Companion (avancé)";
+
+      if (id) {
+        const s = cfgState.studios.find(x => x.id === id);
+        if (!s) return;
+        document.getElementById("configModalTitle").textContent = "Modifier le studio";
+        document.getElementById("cfgId").value          = s.id;
+        document.getElementById("cfgId").disabled       = true;
+        document.getElementById("cfgLabel").value       = s.label;
+        document.getElementById("cfgGameName").value    = s.gameName;
+        document.getElementById("cfgRecVar").value      = s.recVar;
+        document.getElementById("cfgPage").value        = s.launchButton?.page   ?? "";
+        document.getElementById("cfgRow").value         = s.launchButton?.row    ?? "";
+        document.getElementById("cfgColumn").value      = s.launchButton?.column ?? "";
+        document.getElementById("cfgContactName").value  = s.contactVariables?.name  || "";
+        document.getElementById("cfgContactPhone").value = s.contactVariables?.phone || "";
+        document.getElementById("cfgContactEmail").value = s.contactVariables?.email || "";
+      } else {
+        document.getElementById("configModalTitle").textContent = "Nouveau studio";
+        document.getElementById("cfgId").disabled  = false;
+        document.getElementById("cfgId").value     = "";
+        document.getElementById("cfgLabel").value  = "";
+        document.getElementById("cfgGameName").value   = "";
+        document.getElementById("cfgRecVar").value     = "";
+        document.getElementById("cfgPage").value       = "2";
+        document.getElementById("cfgRow").value        = "0";
+        document.getElementById("cfgColumn").value     = "0";
+        document.getElementById("cfgContactName").value  = "";
+        document.getElementById("cfgContactPhone").value = "";
+        document.getElementById("cfgContactEmail").value = "";
+      }
+
+      document.getElementById("configOverlay").classList.add("open");
+    }
+
+    function closeConfigModal() {
+      document.getElementById("configOverlay").classList.remove("open");
+    }
+
+    async function saveStudioFromModal() {
+      const id       = document.getElementById("cfgId").value.trim().toUpperCase();
+      const label    = document.getElementById("cfgLabel").value.trim();
+      const gameName = document.getElementById("cfgGameName").value.trim();
+      const recVar   = document.getElementById("cfgRecVar").value.trim();
+      const page     = parseInt(document.getElementById("cfgPage").value);
+      const row      = parseInt(document.getElementById("cfgRow").value);
+      const column   = parseInt(document.getElementById("cfgColumn").value);
+
+      // Validation
+      let valid = true;
+      document.getElementById("cfgIdError").textContent    = "";
+      document.getElementById("cfgRecVarError").textContent = "";
+      document.getElementById("cfgError").textContent      = "";
+
+      if (!id) {
+        document.getElementById("cfgIdError").textContent = "ID requis";
+        valid = false;
+      } else if (!/^[A-Z0-9_]+$/.test(id)) {
+        document.getElementById("cfgIdError").textContent = "Lettres majuscules, chiffres et _ uniquement";
+        valid = false;
+      } else if (!cfgState.editingId && cfgState.studios.find(s => s.id === id)) {
+        document.getElementById("cfgIdError").textContent = "Cet ID existe déjà";
+        valid = false;
+      }
+
+      if (!label || !gameName) {
+        document.getElementById("cfgError").textContent = "Label et nom du jeu requis";
+        valid = false;
+      }
+
+      if (!recVar) {
+        document.getElementById("cfgRecVarError").textContent = "Variable REC requise";
+        valid = false;
+      }
+
+      if (!valid) return;
+
+      // Contact variables : auto-générées depuis l'ID si vides
+      const contactName  = document.getElementById("cfgContactName").value.trim()  || `contact_${id}_name`;
+      const contactPhone = document.getElementById("cfgContactPhone").value.trim() || `contact_${id}_phone`;
+      const contactEmail = document.getElementById("cfgContactEmail").value.trim() || `contact_${id}_email`;
+
+      const studio = {
+        id, label, gameName, recVar,
+        launchButton:     { page, row, column },
+        contactVariables: { name: contactName, phone: contactPhone, email: contactEmail }
+      };
+
+      if (cfgState.editingId) {
+        const idx = cfgState.studios.findIndex(s => s.id === cfgState.editingId);
+        if (idx !== -1) cfgState.studios[idx] = studio;
+      } else {
+        cfgState.studios.push(studio);
+      }
+
+      try {
+        await saveConfig();
+        closeConfigModal();
+      } catch (e) {
+        document.getElementById("cfgError").textContent = e.message || "Erreur de sauvegarde";
+      }
+    }
+
+    // Auto-remplissage de la variable REC depuis l'ID
+    document.getElementById("cfgId").addEventListener("input", e => {
+      const id = e.target.value.trim().toUpperCase();
+      e.target.value = id;
+      if (!cfgState.editingId) {
+        const recVar = document.getElementById("cfgRecVar");
+        if (!recVar.value || recVar.value.startsWith("REC_")) {
+          recVar.value = id ? `REC_${id}` : "";
+        }
+      }
+    });
+
+    // Toggle section avancée
+    document.getElementById("advancedToggle").addEventListener("click", () => {
+      const section = document.getElementById("advancedSection");
+      const btn     = document.getElementById("advancedToggle");
+      const open    = section.classList.toggle("open");
+      btn.textContent = (open ? "▾ " : "▸ ") + "Variables contact Companion (avancé)";
+    });
+
+    /* ---- Companion URL ---- */
+    document.getElementById("editCompanionBtn").addEventListener("click", () => {
+      document.getElementById("companionEditRow").style.display = "flex";
+      document.getElementById("companionUrlInput").focus();
+      document.getElementById("companionPing").textContent = "";
+      document.getElementById("companionPing").className   = "companion-ping";
+    });
+
+    document.getElementById("cancelCompanionBtn").addEventListener("click", () => {
+      document.getElementById("companionEditRow").style.display = "none";
+      document.getElementById("companionUrlInput").value = cfgState.companionUrl;
+    });
+
+    document.getElementById("saveCompanionBtn").addEventListener("click", async () => {
+      const url   = document.getElementById("companionUrlInput").value.trim();
+      const input = document.getElementById("companionUrlInput");
+      if (!url) return;
+      input.disabled = true;
+      try {
+        const res = await api("/api/admin/companion-url", {
+          method: "POST",
+          body:   JSON.stringify({ url })
+        });
+        cfgState.companionUrl = res.url;
+        document.getElementById("companionUrlText").textContent  = res.url;
+        document.getElementById("companionEditRow").style.display = "none";
+      } catch (e) {
+        input.style.borderColor = "var(--red)";
+        setTimeout(() => { input.style.borderColor = ""; }, 1500);
+      } finally {
+        input.disabled = false;
+      }
+    });
+
+    document.getElementById("companionUrlInput").addEventListener("keydown", e => {
+      if (e.key === "Enter")  document.getElementById("saveCompanionBtn").click();
+      if (e.key === "Escape") document.getElementById("cancelCompanionBtn").click();
+    });
+
+    document.getElementById("testCompanionBtn").addEventListener("click", async () => {
+      const ping = document.getElementById("companionPing");
+      ping.textContent = "…";
+      ping.className   = "companion-ping";
+      try {
+        await api("/api/admin/companion-test");
+        ping.textContent = "✓ Connecté";
+        ping.className   = "companion-ping ok";
+      } catch {
+        ping.textContent = "✗ Hors ligne";
+        ping.className   = "companion-ping ko";
+      }
+    });
+
+    document.getElementById("addStudioBtn").addEventListener("click", () => openConfigModal());
+    document.getElementById("configCancelBtn").addEventListener("click", closeConfigModal);
+    document.getElementById("configOverlay").addEventListener("click", e => {
+      if (e.target === document.getElementById("configOverlay")) closeConfigModal();
+    });
+    document.getElementById("configSaveBtn").addEventListener("click", saveStudioFromModal);
+
+    /* ============================================================
+       INIT
+    ============================================================ */
     updateClock();
     setInterval(updateClock, 1000);
 
     checkLicense();
+
     setInterval(() => {
       if (els.appRoot.style.display !== "none") {
-        loadStudios().catch(() => {});
+        const pilotageVisible = document.getElementById("tab-pilotage").style.display !== "none";
+        if (pilotageVisible) loadStudios().catch(() => {});
       }
     }, 3000);
   </script>

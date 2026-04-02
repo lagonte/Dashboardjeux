@@ -72,27 +72,71 @@ build_encoded_name_from_session() {
     local studio_id="$1"
     local runtime_dir="$2"
     local logs_file="$3"
+    local filename="$4"
 
-    python3 - "$studio_id" "$runtime_dir" "$logs_file" <<'PY'
-import sys, json, base64, os
-from datetime import datetime
+    python3 - "$studio_id" "$runtime_dir" "$logs_file" "$filename" <<'PY'
+import sys, json, base64, os, re
+from datetime import datetime, timezone, timedelta
 
-studio_id = sys.argv[1]
+studio_id  = sys.argv[1]
 runtime_dir = sys.argv[2]
-logs_file = sys.argv[3]
+logs_file  = sys.argv[3]
+filename   = sys.argv[4]
 
+# ── Parse le timestamp depuis le nom du fichier ──────────────────────────────
+# Format attendu : "November_30_Session_de_11_42 - ST1.mp4"
+recording_start = None
+m = re.search(r'(\w+)_(\d+)_Session_de_(\d+)_(\d+)', filename)
+if m:
+    MONTHS = {
+        'January':1,'February':2,'March':3,'April':4,
+        'May':5,'June':6,'July':7,'August':8,
+        'September':9,'October':10,'November':11,'December':12
+    }
+    month = MONTHS.get(m.group(1))
+    if month:
+        now = datetime.now(timezone.utc)
+        try:
+            recording_start = datetime(
+                now.year, month, int(m.group(2)),
+                int(m.group(3)), int(m.group(4)),
+                tzinfo=timezone.utc
+            )
+            # Si la date semble dans le futur (ex: décembre lu en janvier)
+            if recording_start > now + timedelta(hours=1):
+                recording_start = recording_start.replace(year=now.year - 1)
+        except ValueError:
+            recording_start = None
+
+# ── Lecture session runtime ───────────────────────────────────────────────────
 runtime_file = os.path.join(runtime_dir, f"{studio_id}-current-session.json")
-
 if not os.path.exists(runtime_file):
     sys.exit(1)
 
 with open(runtime_file, "r", encoding="utf-8") as f:
     current = json.load(f)
 
+# ── Validation temporelle : l'enregistrement doit être dans la fenêtre session ──
+if recording_start:
+    started_at_str = current.get("createdAt", "")
+    expires_at_str = current.get("expiresAt", "")
+    try:
+        started_at = datetime.fromisoformat(started_at_str.replace("Z", "+00:00"))
+        expires_at = (
+            datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
+            if expires_at_str
+            else started_at + timedelta(hours=1)
+        )
+        if not (started_at <= recording_start <= expires_at):
+            sys.exit(1)
+    except Exception:
+        pass  # dates non parsables → on continue sans validation temporelle
+
 session_id = current.get("sessionId")
 if not session_id:
     sys.exit(1)
 
+# ── Recherche dans les logs ───────────────────────────────────────────────────
 if not os.path.exists(logs_file):
     sys.exit(1)
 
@@ -106,7 +150,6 @@ with open(logs_file, "r", encoding="utf-8") as f:
             obj = json.loads(line)
         except Exception:
             continue
-
         if obj.get("sessionId") == session_id:
             match = obj
             break
@@ -114,11 +157,16 @@ with open(logs_file, "r", encoding="utf-8") as f:
 if not match:
     sys.exit(1)
 
-name = str(match.get("name", "")).strip()
-email = str(match.get("email", "")).strip().lower()
-phone = str(match.get("phone", "")).strip()
+# ── Nettoyage : retire les backticks (délimiteur réservé du pipeline) ─────────
+def clean(s):
+    return str(s).strip().replace("`", "")
+
+name       = clean(match.get("name", ""))
+email      = clean(match.get("email", "")).lower()
+phone      = str(match.get("phone", "")).strip()   # format international, pas de nettoyage
 created_at = str(match.get("createdAt", "")).strip()
 
+# Champ 4 — Heure HH:MM
 hhmm = ""
 if created_at:
     try:
@@ -127,8 +175,29 @@ if created_at:
     except Exception:
         hhmm = ""
 
-payload = f"{name}|{email}|{phone}|{hhmm}"
-encoded = base64.urlsafe_b64encode(payload.encode("utf-8")).decode("ascii").rstrip("=")
+# Champ 5 — Salle = identifiant du studio (ex: ST1, ST2, ST4B)
+salle = clean(current.get("studioId", studio_id))
+
+# Champ 6 — Caméra (non géré par le dashboard, vide)
+camera = ""
+
+# Champ 7 — Trims (non géré par le dashboard, vide)
+trims = ""
+
+# ── Encodage base64 standard, sans padding, safe pour les noms de fichiers ──
+# Format : nom|email|téléphone|heure|salle|caméra|trims
+payload = f"{name}|{email}|{phone}|{hhmm}|{salle}|{camera}|{trims}"
+raw = base64.b64encode(payload.encode("utf-8")).decode("ascii").rstrip("=")
+# '/' est invalide dans un nom de fichier macOS/Linux → remplacé par '_'
+# Le pipeline Autocutter doit gérer ce remplacement côté décodage
+encoded = raw.replace("/", "_")
+
+# Vérification limite : ~188 bytes raw = 251 chars base64 (sans padding) + 4 (.mp4) = 255
+if len(encoded) > 251:
+    # Troncature : on retire l'email en priorité (champ le plus lourd)
+    payload_no_email = f"{name}||{phone}|{hhmm}|{salle}|{camera}|{trims}"
+    raw = base64.b64encode(payload_no_email.encode("utf-8")).decode("ascii").rstrip("=")
+    encoded = raw.replace("/", "_")
 
 print(encoded)
 PY
@@ -163,7 +232,7 @@ STUDIO_ID="$(extract_studio_from_filename "$FILENAME")"
 ENCODED_NAME=""
 
 if [[ -n "$STUDIO_ID" ]]; then
-    if ENCODED_NAME="$(build_encoded_name_from_session "$STUDIO_ID" "$RUNTIME_DIR" "$CONTACT_LOGS" 2>/dev/null)"; then
+    if ENCODED_NAME="$(build_encoded_name_from_session "$STUDIO_ID" "$RUNTIME_DIR" "$CONTACT_LOGS" "$FILENAME" 2>/dev/null)"; then
         DEST_NAME="${ENCODED_NAME}.mp4"
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Session metadata found for $STUDIO_ID -> $DEST_NAME" | tee -a "$LOG_FILE"
     fi

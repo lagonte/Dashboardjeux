@@ -6,6 +6,7 @@ Files are uploaded to {user}/staging/ first, verified, then moved
 atomically to {user}/uploads/ where the pipeline watches.
 """
 
+import fcntl
 import json
 import os
 import sys
@@ -21,6 +22,7 @@ AUTOCUTTER_DIR = os.path.expanduser("~/.autocutter")
 UPLOADS_DIR = os.path.join(AUTOCUTTER_DIR, "uploads")
 KEY_FILE = os.path.join(AUTOCUTTER_DIR, ".sa-key.json")
 LOG_FILE = "/tmp/autocutter-sync.log"
+LOCK_FILE = "/tmp/autocutter-sync.lock"
 
 USER_ID = "ce17cfbf-c7b3-4a89-8f1d-8f4c51b8e764"
 BUCKET_NAME = "autocutter-data-lake-prod"
@@ -160,6 +162,19 @@ def sync():
     cleanup_old_files()
 
 
+def sync_with_lock():
+    """Exécute sync() avec un verrou exclusif.
+    Si une autre instance tourne déjà, on attend qu'elle se termine
+    puis on s'exécute à notre tour (file d'attente implicite).
+    """
+    with open(LOCK_FILE, "w") as lockf:
+        log("En attente du verrou...")
+        fcntl.flock(lockf, fcntl.LOCK_EX)   # bloquant : attend si nécessaire
+        log("Verrou acquis, démarrage du sync.")
+        sync()
+        # Le verrou est libéré automatiquement à la fermeture du fichier
+
+
 def main():
     print("AutoCutter GCS Sync v2")
     print(f"  Source:  {UPLOADS_DIR}")
@@ -172,12 +187,12 @@ def main():
         print("Watch mode - syncing every 30 seconds. Ctrl+C to stop.")
         while True:
             try:
-                sync()
+                sync_with_lock()
             except Exception as e:
                 log(f"ERROR: {e}")
             time.sleep(30)
     else:
-        sync()
+        sync_with_lock()
 
 
 if __name__ == "__main__":

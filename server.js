@@ -4,7 +4,12 @@ const fsp = require("fs/promises");
 const path = require("path");
 const axios = require("axios");
 const os = require("os");
-const ROOT = __dirname;
+// En mode binaire pkg, __dirname pointe vers le snapshot (lecture seule).
+// Les fichiers modifiables (config, contacts, logs) doivent être à côté du binaire.
+const IS_PKG = typeof process.pkg !== "undefined";
+const ROOT = IS_PKG ? path.dirname(process.execPath) : __dirname;
+const SNAPSHOT = __dirname; // pour les assets embarqués (public/)
+
 const LOGS_PATH = path.resolve(ROOT, "./logs.json");
 const RUNTIME_DIR = path.resolve(ROOT, "./runtime");
 
@@ -24,76 +29,14 @@ const LICENSE_GRACE_HOURS = Number(fileConfig.license?.gracePeriodHours || 168);
 
 const CONFIG = {
   companionUrl: fileConfig.companion?.baseUrl || "http://127.0.0.1:8000",
-  studios: [
-    {
-      id: "ST1",
-      label: "1",
-      gameName: "Le premier qui rit sort",
-      recVar: "REC_ST1",
-      launchButton: { page: 2, row: 0, column: 0 },
-      contactVariables: {
-        name: "contact_ST1_name",
-        phone: "contact_ST1_phone",
-        email: "contact_ST1_email"
-      }
-    },
-    {
-      id: "ST2",
-      label: "2",
-      gameName: "Patisserie Arrosée",
-      recVar: "REC_ST2",
-      launchButton: { page: 2, row: 0, column: 2 },
-      contactVariables: {
-        name: "contact_ST2_name",
-        phone: "contact_ST2_phone",
-        email: "contact_ST2_email"
-      }
-    },
-    
-    {
-      id: "ST3",
-      label: "3",
-      gameName: "Meilleur Bluffeur",
-      recVar: "REC_ST3",
-      launchButton: { page: 2, row: 0, column: 4 },
-      contactVariables: {
-        name: "contact_ST3_name",
-        phone: "contact_ST3_phone",
-        email: "contact_ST3_email"
-      }
-    },
-    {
-      id: "ST4",
-      label: "4",
-      gameName: "Alibi 1",
-      recVar: "REC_ST4",
-      launchButton: { page: 2, row: 0, column: 6 },
-      contactVariables: {
-        name: "contact_ST4_name",
-        phone: "contact_ST4_phone",
-        email: "contact_ST4_email"
-      }
-    },
-    {
-      id: "ST4B",
-      label: "4b",
-      gameName: "Alibi 2",
-      recVar: "REC_ST4b",
-      launchButton: { page: 2, row: 0, column: 8 },
-      contactVariables: {
-        name: "contact_ST4B_name",
-        phone: "contact_ST4B_phone",
-        email: "contact_ST4B_email"
-      }
-    }
-  ]
+  studios: fileConfig.studios || []
 };
 
 app.use(express.json());
-app.use(express.static(path.join(ROOT, "public")));
+app.use(express.static(path.join(SNAPSHOT, "public")));
 
 app.get("/", (_req, res) => {
-  res.sendFile(path.join(ROOT, "public", "index.html"));
+  res.sendFile(path.join(SNAPSHOT, "public", "index.html"));
 });
 
 /* -------------------- Utils -------------------- */
@@ -205,21 +148,24 @@ async function companionPressButton(page, row, column) {
 
 async function getStudioRuntimeState(studio, contact) {
     let recValue = null;
-  
+    let companionOk = true;
+
     try {
       recValue = await companionGetCustomVariable(studio.recVar);
       console.log("REC READ", studio.id, studio.recVar, recValue);
     } catch (e) {
+      companionOk = false;
       console.error("Companion read error:", studio.recVar, e.message);
     }
-  
-    const isBusy = recValue === "1";
-  
+
+    const status = !companionOk ? "unknown" : recValue === "1" ? "busy" : "free";
+
     return {
       id: studio.id,
       label: studio.label,
       gameName: studio.gameName,
-      status: isBusy ? "busy" : "free",
+      status,
+      companionOk,
       recValue,
       contact: {
         name: contact?.name || "",
@@ -337,6 +283,28 @@ async function appendLog(entry) {
   await fsp.appendFile(LOGS_PATH, JSON.stringify(entry) + "\n", "utf8");
 }
 
+async function pruneLogsOlderThan(days) {
+  try {
+    await fsp.access(LOGS_PATH, fs.constants.F_OK);
+  } catch {
+    return; // pas encore de fichier logs
+  }
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const raw = await fsp.readFile(LOGS_PATH, "utf8");
+  const lines = raw.split("\n").filter(Boolean);
+  const kept = lines.filter(line => {
+    try {
+      return new Date(JSON.parse(line).createdAt) >= cutoff;
+    } catch {
+      return false;
+    }
+  });
+  if (kept.length < lines.length) {
+    await fsp.writeFile(LOGS_PATH, kept.join("\n") + (kept.length ? "\n" : ""), "utf8");
+    console.log(`Logs pruned: ${lines.length - kept.length} entrée(s) supprimée(s), ${kept.length} conservée(s).`);
+  }
+}
+
 async function writeCurrentStudioSession(studioId, payload) {
   await fsp.mkdir(RUNTIME_DIR, { recursive: true });
   const filePath = path.join(RUNTIME_DIR, `${studioId}-current-session.json`);
@@ -432,51 +400,59 @@ app.post("/api/studios/:id/launch", requireLicense, async (req, res) => {
       const contacts = await readContacts();
       const currentState = await getStudioRuntimeState(studio, contacts[studio.id]);
   
-      if (currentState.status === "busy") {
-        return res.status(409).json({ error: "Studio déjà indisponible" });
-      }
-  
-      const createdAt = nowIso();
-  
-      const contact = {
-        name,
-        phone,
-        email,
-        saved_at: createdAt,
-        used: false,
-        sessionId
-      };
-  
-      contacts[studio.id] = contact;
-      await writeContacts(contacts);
-  
-      await appendLog({
-        studioId: studio.id,
-        sessionId,
-        name,
-        phone,
-        email,
-        createdAt
-      });
-  
-      await writeCurrentStudioSession(studio.id, {
-        studioId: studio.id,
-        sessionId,
-        name,
-        phone,
-        email,
-        createdAt
-      });
-  
-      await companionSetCustomVariable(studio.contactVariables.name, name);
-      await companionSetCustomVariable(studio.contactVariables.phone, phone);
-      await companionSetCustomVariable(studio.contactVariables.email, email);
-  
-      await companionPressButton(
-        studio.launchButton.page,
-        studio.launchButton.row,
-        studio.launchButton.column
-      );
+      if (!currentState.companionOk) {
+        return res.status(503).json({ error: "Companion inaccessible — vérifiez que Companion est ouvert" });
+      }
+
+      if (currentState.status === "busy") {
+        return res.status(409).json({ error: "Studio déjà indisponible" });
+      }
+
+      const createdAt = nowIso();
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+      // Companion joignable : envoi des variables puis appui bouton
+      await companionSetCustomVariable(studio.contactVariables.name, name);
+      await companionSetCustomVariable(studio.contactVariables.phone, phone);
+      await companionSetCustomVariable(studio.contactVariables.email, email);
+      await companionPressButton(
+        studio.launchButton.page,
+        studio.launchButton.row,
+        studio.launchButton.column
+      );
+
+      // Companion OK → persistance des données
+      const contact = {
+        name,
+        phone,
+        email,
+        saved_at: createdAt,
+        used: false,
+        sessionId
+      };
+
+      contacts[studio.id] = contact;
+      await writeContacts(contacts);
+
+      await appendLog({
+        studioId: studio.id,
+        sessionId,
+        name,
+        phone,
+        email,
+        createdAt
+      });
+
+      await writeCurrentStudioSession(studio.id, {
+        studioId: studio.id,
+        gameName: studio.gameName || "",
+        sessionId,
+        name,
+        phone,
+        email,
+        createdAt,
+        expiresAt
+      });
   
       res.json({ ok: true, sessionId });
     } catch (error) {
@@ -507,8 +483,61 @@ app.post("/api/studios/:id/reset", requireLicense, async (req, res) => {
   }
 });
 
+/* -------------------- Admin Companion URL -------------------- */
+
+app.get("/api/admin/companion-url", requireLicense, async (_req, res) => {
+  res.json({ url: CONFIG.companionUrl });
+});
+
+app.post("/api/admin/companion-url", requireLicense, async (req, res) => {
+  const url = String(req.body.url || "").trim().replace(/\/$/, "");
+  if (!url || !/^https?:\/\/.+/.test(url)) {
+    return res.status(400).json({ error: "URL invalide (ex: http://192.168.1.50:8000)" });
+  }
+  CONFIG.companionUrl = url;
+  const cfg = JSON.parse(await fsp.readFile(CONFIG_PATH, "utf8"));
+  if (!cfg.companion) cfg.companion = {};
+  cfg.companion.baseUrl = url;
+  await fsp.writeFile(CONFIG_PATH, JSON.stringify(cfg, null, 2), "utf8");
+  res.json({ ok: true, url });
+});
+
+app.get("/api/admin/companion-test", requireLicense, async (_req, res) => {
+  try {
+    await axios.get(`${CONFIG.companionUrl}/api/custom-variable`, { timeout: 3000 });
+    res.json({ ok: true, url: CONFIG.companionUrl });
+  } catch (e) {
+    res.status(503).json({ ok: false, url: CONFIG.companionUrl, error: e.message });
+  }
+});
+
+/* -------------------- Admin Config -------------------- */
+
+app.get("/api/admin/config", requireLicense, async (_req, res) => {
+  res.json({ studios: CONFIG.studios });
+});
+
+app.post("/api/admin/config", requireLicense, async (req, res) => {
+  try {
+    const { studios } = req.body;
+    if (!Array.isArray(studios)) {
+      return res.status(400).json({ error: "studios invalide" });
+    }
+    CONFIG.studios = studios;
+    const current = JSON.parse(await fsp.readFile(CONFIG_PATH, "utf8"));
+    current.studios = studios;
+    await fsp.writeFile(CONFIG_PATH, JSON.stringify(current, null, 2), "utf8");
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 /* -------------------- Start -------------------- */
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Studio Control local: http://0.0.0.0:${PORT}`);
+  // Purge des logs > 30 jours au démarrage puis toutes les 24h
+  pruneLogsOlderThan(30).catch(console.error);
+  setInterval(() => pruneLogsOlderThan(30).catch(console.error), 24 * 60 * 60 * 1000);
 });
