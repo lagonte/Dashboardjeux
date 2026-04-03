@@ -19,14 +19,11 @@
       "games": [
         {
           "name": "Le premier qui rit sort",
-          "launchButton": [
-            {
-              "companionUrl": "",
-              "page": 2,
-              "row": 0,
-              "column": 0
-            }
-          ]
+          "launchButton": {
+            "page": 2,
+            "row": 0,
+            "column": 0
+          }
         }
       ],
       "contactVariables": {
@@ -41,7 +38,7 @@
       "recVar": "REC_ST2",
       "games": [
         {
-          "name": "Patisserie Arrosée",
+          "name": "Patissier Arrosé",
           "launchButton": [
             {
               "companionUrl": "",
@@ -52,7 +49,7 @@
           ]
         },
         {
-          "name": "SPICY",
+          "name": "Spicy",
           "launchButton": [
             {
               "companionUrl": "",
@@ -76,14 +73,11 @@
       "games": [
         {
           "name": "Meilleur Bluffeur",
-          "launchButton": [
-            {
-              "companionUrl": "",
-              "page": 2,
-              "row": 0,
-              "column": 4
-            }
-          ]
+          "launchButton": {
+            "page": 2,
+            "row": 0,
+            "column": 4
+          }
         }
       ],
       "contactVariables": {
@@ -99,14 +93,11 @@
       "games": [
         {
           "name": "Alibi 1",
-          "launchButton": [
-            {
-              "companionUrl": "",
-              "page": 2,
-              "row": 0,
-              "column": 6
-            }
-          ]
+          "launchButton": {
+            "page": 2,
+            "row": 0,
+            "column": 6
+          }
         }
       ],
       "contactVariables": {
@@ -122,14 +113,11 @@
       "games": [
         {
           "name": "Alibi 2",
-          "launchButton": [
-            {
-              "companionUrl": "",
-              "page": 2,
-              "row": 0,
-              "column": 8
-            }
-          ]
+          "launchButton": {
+            "page": 2,
+            "row": 0,
+            "column": 8
+          }
         }
       ],
       "contactVariables": {
