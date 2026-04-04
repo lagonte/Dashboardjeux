@@ -3,6 +3,7 @@ const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
 const axios = require("axios");
+const { exec } = require("child_process");
 const os = require("os");
 // En mode binaire pkg, __dirname pointe vers le snapshot (lecture seule).
 // Les fichiers modifiables (config, contacts, logs) doivent être à côté du binaire.
@@ -243,14 +244,23 @@ async function validateLicenseWithCloud(licenseKey) {
       hostname: os.hostname()
     },
     {
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
+      timeout: 5000
     }
   );
 
   return res.data;
 }
 
+let _licenseCache = null;
+let _licenseCacheAt = 0;
+const LICENSE_CACHE_TTL = 60 * 1000; // 1 minute
+
 async function getLicenseStatus() {
+  if (_licenseCache && (Date.now() - _licenseCacheAt) < LICENSE_CACHE_TTL) {
+    return _licenseCache;
+  }
+
   const store = await readLicenseStore();
 
   if (!store.licenseKey) {
@@ -272,22 +282,26 @@ async function getLicenseStatus() {
     };
     await writeLicenseStore(newStore);
 
-    return {
+    _licenseCache = {
       activated: true,
       valid: Boolean(result.valid),
       requiresActivation: false,
       graceActive: false,
       licenseMeta: result
     };
+    _licenseCacheAt = Date.now();
+    return _licenseCache;
   } catch (error) {
     const grace = isWithinGracePeriod(store.lastValidatedAt);
-    return {
+    _licenseCache = {
       activated: true,
       valid: grace,
       requiresActivation: false,
       graceActive: grace,
       offlineReason: error.message
     };
+    _licenseCacheAt = Date.now();
+    return _licenseCache;
   }
 }
 
@@ -579,8 +593,14 @@ app.post("/api/admin/config", requireLicense, async (req, res) => {
 /* -------------------- Start -------------------- */
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Studio Control local: http://0.0.0.0:${PORT}`);
+  const url = `http://localhost:${PORT}`;
+  console.log(`Studio Control local: ${url}`);
   // Purge des logs > 30 jours au démarrage puis toutes les 24h
   pruneLogsOlderThan(30).catch(console.error);
   setInterval(() => pruneLogsOlderThan(30).catch(console.error), 24 * 60 * 60 * 1000);
+  // Ouvre le navigateur automatiquement (sauf si lancé depuis le launcher Electron)
+  if (!process.env.NO_AUTO_OPEN) {
+    const cmd = process.platform === "win32" ? `start ${url}` : `open ${url}`;
+    exec(cmd, (err) => { if (err) console.warn("Impossible d'ouvrir le navigateur:", err.message); });
+  }
 });

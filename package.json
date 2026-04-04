@@ -5,10 +5,13 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
+        "start:launcher": "electron electron-main.js",
         "build:mac": "pkg server.js --target node18-macos-arm64 --output dist/DashboardJeux",
         "build:dmg": "bash scripts/build-dmg.sh",
         "build:win": "pkg server.js --target node18-win-x64 --output dist/DashboardJeux.exe",
-        "build:win-dist": "bash scripts/build-win.sh"
+        "build:win-dist": "bash scripts/build-win.sh",
+        "build:launcher-mac": "electron-builder --mac --config electron-builder.json",
+        "build:launcher-win": "electron-builder --win --config electron-builder.json"
     },
     "engines": {
         "node": ">=18"
@@ -25,5 +28,9 @@
     "dependencies": {
         "axios": "^1.14.0",
         "express": "^4.19.2"
+    },
+    "devDependencies": {
+        "electron": "^31.0.0",
+        "electron-builder": "^24.0.0"
     }
 }
