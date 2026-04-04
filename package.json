@@ -2,7 +2,7 @@
     "name": "studio-control-local",
     "version": "1.0.0",
     "private": true,
-    "main": "server.js",
+    "main": "electron-main.js",
     "scripts": {
         "start": "node server.js",
         "start:launcher": "electron electron-main.js",

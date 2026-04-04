@@ -3,21 +3,47 @@ const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
-let mainWindow = null;
+let mainWindow    = null;
 let serverProcess = null;
-let serverPort = 3000;
-let serverStatus = "starting"; // starting | running | stopped | error
+let serverPort    = 3000;
+let serverStatus  = "starting"; // starting | running | stopped | error
+let _restartTimer = null;
+const MAX_RESTARTS = 10;
+let _restartCount  = 0;
 
-// ── Config ─────────────────────────────────────────────────────────────────
+// ── Chemins ──────────────────────────────────────────────────────────────────
+// userData = ~/Library/Application Support/DashboardJeux/
+// Contient tous les fichiers modifiables : config, contacts, licence, logs, runtime.
+// Survit aux mises à jour de l'app.
 
-const CONFIG_PATH = path.join(__dirname, "app-config.json");
+function getUserData() {
+  return app.getPath("userData");
+}
+
+function getConfigPath() {
+  return path.join(getUserData(), "app-config.json");
+}
+
+// ── Premier lancement : copie la config par défaut si absente ────────────────
+function ensureUserData() {
+  const userData   = getUserData();
+  const configDest = getConfigPath();
+  fs.mkdirSync(userData, { recursive: true });
+
+  if (!fs.existsSync(configDest)) {
+    const defaultCfg = path.join(__dirname, "app-config.json");
+    if (fs.existsSync(defaultCfg)) {
+      fs.copyFileSync(defaultCfg, configDest);
+      console.log("[init] Config copiée vers userData :", configDest);
+    }
+  }
+}
+
+// ── Config ───────────────────────────────────────────────────────────────────
 
 function readConfig() {
-  try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
-  } catch {
-    return {};
-  }
+  try { return JSON.parse(fs.readFileSync(getConfigPath(), "utf8")); }
+  catch { return {}; }
 }
 
 function readPort() {
@@ -28,40 +54,64 @@ function writePort(newPort) {
   const cfg = readConfig();
   if (!cfg.server) cfg.server = {};
   cfg.server.port = parseInt(newPort);
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2));
+  const tmp = getConfigPath() + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(cfg, null, 2));
+  fs.renameSync(tmp, getConfigPath());
 }
 
-// ── Server ──────────────────────────────────────────────────────────────────
+// ── Server ───────────────────────────────────────────────────────────────────
 
 function startServer() {
-  serverPort = readPort();
+  serverPort   = readPort();
   serverStatus = "starting";
 
+  // En mode packagé (asar=false), __dirname = .app/Contents/Resources/app/
+  // En dev, __dirname = dossier du projet
   const serverPath = path.join(__dirname, "server.js");
+
+  // ELECTRON_RUN_AS_NODE=1 → Electron se comporte comme Node pour ce processus
   serverProcess = spawn(process.execPath, [serverPath], {
     cwd: __dirname,
-    env: { ...process.env, NO_AUTO_OPEN: "1" }
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: "1",
+      NO_AUTO_OPEN:         "1",
+      APP_DATA_PATH:        getUserData(),   // chemin userData passé au serveur
+    }
   });
 
   serverProcess.stdout.on("data", (data) => {
     const msg = data.toString();
     console.log("[server]", msg.trim());
     if (msg.includes("Studio Control local")) {
-      serverStatus = "running";
+      serverStatus  = "running";
+      _restartCount = 0;
       sendStatus();
     }
   });
 
   serverProcess.stderr.on("data", (data) => {
     console.error("[server-err]", data.toString().trim());
-    serverStatus = "error";
-    sendStatus();
   });
 
   serverProcess.on("exit", (code) => {
     console.log("[server] exited:", code);
-    serverStatus = code === 0 ? "stopped" : "error";
+    if (code === 0) {
+      serverStatus = "stopped";
+      sendStatus();
+      return;
+    }
+    serverStatus = "error";
     sendStatus();
+    if (_restartCount >= MAX_RESTARTS) {
+      console.error("[server] Trop de redémarrages, abandon.");
+      return;
+    }
+    _restartCount++;
+    const delay = Math.min(1000 * _restartCount, 15000);
+    console.log(`[server] Redémarrage dans ${delay}ms (${_restartCount}/${MAX_RESTARTS})…`);
+    clearTimeout(_restartTimer);
+    _restartTimer = setTimeout(() => { startServer(); sendStatus(); }, delay);
   });
 }
 
@@ -71,58 +121,63 @@ function sendStatus() {
   }
 }
 
-// ── Window ──────────────────────────────────────────────────────────────────
+// ── Window ───────────────────────────────────────────────────────────────────
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 400,
-    height: 460,
+    width:     400,
+    height:    460,
     resizable: false,
-    title: "DashboardJeux",
+    title:     "DashboardJeux",
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
-    }
+      nodeIntegration:  true,
+      contextIsolation: false,
+    },
   });
 
   mainWindow.loadFile(path.join(__dirname, "launcher.html"));
 
-  // Cacher plutôt que fermer
   mainWindow.on("close", (e) => {
     e.preventDefault();
     mainWindow.hide();
   });
 }
 
-// ── App lifecycle ───────────────────────────────────────────────────────────
+// ── App lifecycle ─────────────────────────────────────────────────────────────
 
-app.whenReady().then(() => {
-  startServer();
-  createWindow();
-});
+// Une seule instance à la fois — si une 2ème tente de démarrer,
+// on affiche la fenêtre existante et on quitte la nouvelle.
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
 
-app.on("activate", () => {
-  if (mainWindow) mainWindow.show();
-});
+  app.whenReady().then(() => {
+    app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
+    ensureUserData();
+    startServer();
+    createWindow();
+  });
 
-app.on("before-quit", () => {
-  if (serverProcess) {
-    serverProcess.kill();
-    serverProcess = null;
-  }
-});
+  app.on("activate", () => { if (mainWindow) mainWindow.show(); });
 
-// ── IPC ─────────────────────────────────────────────────────────────────────
+  app.on("before-quit", () => {
+    if (serverProcess) { serverProcess.kill(); serverProcess = null; }
+  });
+}
 
-ipcMain.handle("get-state", () => ({
-  status: serverStatus,
-  port: serverPort
-}));
+// ── IPC ───────────────────────────────────────────────────────────────────────
 
-ipcMain.handle("launch-gui", () => {
-  shell.openExternal(`http://localhost:${serverPort}`);
-});
+ipcMain.handle("get-state",   () => ({ status: serverStatus, port: serverPort }));
+ipcMain.handle("launch-gui",  () => shell.openExternal(`http://localhost:${serverPort}`));
 
 ipcMain.handle("change-port", (_, newPort) => {
   const p = parseInt(newPort);
@@ -134,15 +189,10 @@ ipcMain.handle("change-port", (_, newPort) => {
 
 ipcMain.handle("restart-server", () => {
   if (serverProcess) serverProcess.kill();
-  setTimeout(() => {
-    startServer();
-    sendStatus();
-  }, 800);
+  setTimeout(() => { startServer(); sendStatus(); }, 800);
 });
 
-ipcMain.handle("hide", () => {
-  mainWindow.hide();
-});
+ipcMain.handle("hide", () => mainWindow.hide());
 
 ipcMain.handle("quit", () => {
   if (serverProcess) serverProcess.kill();

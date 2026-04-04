@@ -1,7 +1,8 @@
 {
   "appId": "fr.autocutter.dashboardjeux",
   "productName": "DashboardJeux",
-  "main": "electron-main.js",
+  "icon": "icon.icns",
+  "asar": false,
   "files": [
     "electron-main.js",
     "launcher.html",
@@ -15,13 +16,11 @@
   ],
   "extraResources": [],
   "mac": {
-    "target": "dmg",
-    "category": "public.app-category.utilities",
-    "arch": ["arm64", "x64"]
+    "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }],
+    "category": "public.app-category.utilities"
   },
   "win": {
-    "target": "nsis",
-    "arch": ["x64"]
+    "target": [{ "target": "nsis", "arch": ["x64"] }]
   },
   "nsis": {
     "oneClick": true,

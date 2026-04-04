@@ -7,24 +7,56 @@ const { exec } = require("child_process");
 const os = require("os");
 // En mode binaire pkg, __dirname pointe vers le snapshot (lecture seule).
 // Les fichiers modifiables (config, contacts, logs) doivent être à côté du binaire.
-const IS_PKG = typeof process.pkg !== "undefined";
-const ROOT = IS_PKG ? path.dirname(process.execPath) : __dirname;
-const SNAPSHOT = __dirname; // pour les assets embarqués (public/)
+const IS_PKG      = typeof process.pkg !== "undefined";
+const IS_ELECTRON = !!process.env.APP_DATA_PATH;
+// ROOT = dossier des fichiers modifiables (config, contacts, licence, logs)
+// - pkg     → à côté du binaire
+// - Electron → userData (~/Library/Application Support/DashboardJeux/)
+// - dev      → __dirname
+const ROOT     = IS_PKG ? path.dirname(process.execPath)
+               : IS_ELECTRON ? process.env.APP_DATA_PATH
+               : __dirname;
+const SNAPSHOT = __dirname; // assets embarqués (public/) — toujours dans le bundle
 
 const LOGS_PATH = path.resolve(ROOT, "./logs.json");
 const RUNTIME_DIR = path.resolve(ROOT, "./runtime");
 
 const app = express();
 
-
 const CONFIG_PATH = path.join(ROOT, "app-config.json");
-const fileConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+
+// ── Chargement config avec fallback ──────────────────────────────────────────
+let fileConfig;
+try {
+  fileConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+} catch (e) {
+  console.error("[CONFIG] Impossible de lire app-config.json :", e.message);
+  console.error("[CONFIG] Vérifiez le fichier et redémarrez.");
+  process.exit(1);
+}
 
 const PORT = fileConfig.server?.port || 3000;
 const CONTACTS_PATH = path.resolve(ROOT, fileConfig.contactsJsonPath || "./contacts.json");
 const LICENSE_STORE_PATH = path.resolve(ROOT, fileConfig.licenseStorePath || "./license-store.json");
+// Copie de secours dans le home — survit à une réinstallation de l'app
+const LICENSE_STORE_BACKUP = path.join(os.homedir(), ".dashboardjeux-license.json");
 const LICENSE_VALIDATION_URL = fileConfig.license?.validationUrl || "";
 const LICENSE_GRACE_HOURS = Number(fileConfig.license?.gracePeriodHours || 168);
+
+// ── Écriture atomique ─────────────────────────────────────────────────────────
+// Écrit dans .tmp puis rename() — atomique sur le même filesystem.
+// Protège contre les corruptions JSON en cas de coupure courant / crash.
+async function atomicWrite(filePath, data) {
+  const tmp = filePath + ".tmp";
+  await fsp.writeFile(tmp, JSON.stringify(data, null, 2), "utf8");
+  await fsp.rename(tmp, filePath);
+}
+
+// ── Validation studio.id ──────────────────────────────────────────────────────
+const SAFE_ID = /^[a-zA-Z0-9_-]{1,32}$/;
+function assertSafeId(id) {
+  if (!SAFE_ID.test(id)) throw new Error(`ID de studio invalide : "${id}"`);
+}
 
 
 
@@ -34,6 +66,10 @@ const CONFIG = {
 };
 
 app.use(express.json());
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
 app.use(express.static(path.join(SNAPSHOT, "public")));
 
 app.get("/", (_req, res) => {
@@ -103,7 +139,7 @@ async function readContacts() {
 }
 
 async function writeContacts(data) {
-  await fsp.writeFile(CONTACTS_PATH, JSON.stringify(data, null, 2), "utf8");
+  await atomicWrite(CONTACTS_PATH, data);
 }
 
 async function readLicenseStore() {
@@ -113,13 +149,22 @@ async function readLicenseStore() {
     lastValidatedAt: "",
     lastValidationStatus: "unknown"
   };
-  await ensureJsonFile(LICENSE_STORE_PATH, fallback);
-  const raw = await fsp.readFile(LICENSE_STORE_PATH, "utf8");
-  return { ...fallback, ...JSON.parse(raw || "{}") };
+
+  // Essaie le fichier principal, puis la copie de secours (home dir)
+  for (const candidate of [LICENSE_STORE_PATH, LICENSE_STORE_BACKUP]) {
+    try {
+      const raw = await fsp.readFile(candidate, "utf8");
+      const parsed = JSON.parse(raw);
+      if (parsed.licenseKey) return { ...fallback, ...parsed };
+    } catch {}
+  }
+  return fallback;
 }
 
 async function writeLicenseStore(data) {
-  await fsp.writeFile(LICENSE_STORE_PATH, JSON.stringify(data, null, 2), "utf8");
+  // Écriture atomique aux deux emplacements
+  await atomicWrite(LICENSE_STORE_PATH, data);
+  try { await atomicWrite(LICENSE_STORE_BACKUP, data); } catch {}
 }
 
 function isWithinGracePeriod(lastValidatedAt) {
@@ -354,9 +399,10 @@ async function pruneLogsOlderThan(days) {
 }
 
 async function writeCurrentStudioSession(studioId, payload) {
+  assertSafeId(studioId);
   await fsp.mkdir(RUNTIME_DIR, { recursive: true });
   const filePath = path.join(RUNTIME_DIR, `${studioId}-current-session.json`);
-  await fsp.writeFile(filePath, JSON.stringify(payload, null, 2), "utf8");
+  await atomicWrite(filePath, payload);
 }
 
 /* -------------------- API -------------------- */
@@ -518,6 +564,7 @@ app.post("/api/studios/:id/reset", requireLicense, async (req, res) => {
       return res.status(404).json({ error: "Studio introuvable" });
     }
   try {
+    assertSafeId(studio.id);
     await fsp.unlink(path.join(RUNTIME_DIR, `${studio.id}-current-session.json`));
   } catch {}
 
@@ -549,7 +596,7 @@ app.post("/api/admin/companion-url", requireLicense, async (req, res) => {
   const cfg = JSON.parse(await fsp.readFile(CONFIG_PATH, "utf8"));
   if (!cfg.companion) cfg.companion = {};
   cfg.companion.baseUrl = url;
-  await fsp.writeFile(CONFIG_PATH, JSON.stringify(cfg, null, 2), "utf8");
+  await atomicWrite(CONFIG_PATH, cfg);
   res.json({ ok: true, url });
 });
 
@@ -583,7 +630,7 @@ app.post("/api/admin/config", requireLicense, async (req, res) => {
     CONFIG.studios = studios;
     const current = JSON.parse(await fsp.readFile(CONFIG_PATH, "utf8"));
     current.studios = studios;
-    await fsp.writeFile(CONFIG_PATH, JSON.stringify(current, null, 2), "utf8");
+    await atomicWrite(CONFIG_PATH, current);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
